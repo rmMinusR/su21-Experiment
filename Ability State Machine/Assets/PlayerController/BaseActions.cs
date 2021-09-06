@@ -60,8 +60,8 @@ public static class FacingExt
 [Serializable]
 public struct TimeParam
 {
-                    public float timeActive;
-    [NonSerialized] public float delta;
+    [SerializeField] public float timeActive;
+    [NonSerialized]  public float delta;
 }
 
 public struct InputParam

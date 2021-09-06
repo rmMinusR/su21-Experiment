@@ -19,15 +19,19 @@ public sealed class MovementController : MonoBehaviour
         controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0];
         controlMovement = controlsMap.Where(x => x.name == "Move").First();
         controlJump     = controlsMap.Where(x => x.name == "Jump").First();
+
+        _rb = GetComponent<Rigidbody2D>();
+
+        //Ensure we have base movement
+        baseMovement = GetComponent<BaseMovementAction>();
+        Debug.Assert(baseMovement != null);
     }
 
     #region Memoized component references
 
-    private Rigidbody2D __rb;
-    private Rigidbody2D _rb { get => (__rb != null) ? __rb : (__rb = GetComponent<Rigidbody2D>()); }
+    private Rigidbody2D _rb;
 
-    private Animator __anim;
-    private Animator _anim { get => (__anim != null) ? __anim : (__anim = GetComponent<Animator>()); }
+    public BaseMovementAction baseMovement { get; private set; }
 
     #endregion
 
@@ -217,7 +221,8 @@ public sealed class MovementController : MonoBehaviour
         input.local = surfaceToGlobal.inverse.MultiplyPoint(input.global);
 
         //Execute currently-active movement policy
-        velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
+        if(activeMovement != null) velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
+        else velocity = baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
 
         //Apply jumping (if enqueued)
         velocity += _GetJumpDV();

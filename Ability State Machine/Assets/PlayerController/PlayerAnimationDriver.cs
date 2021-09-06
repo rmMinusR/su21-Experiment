@@ -31,7 +31,7 @@ public class PlayerAnimationDriver : MonoBehaviour
 
         //Sprite flipping
         //Tmp is needed to detect changes
-        Facing tmpCurFacing = common.activeMovement.currentFacing;
+        Facing tmpCurFacing = common.activeMovement != null ? common.activeMovement.currentFacing : common.baseMovement.currentFacing;
         if (tmpCurFacing != Facing.DontCare)
         {
             currentFacing = tmpCurFacing;

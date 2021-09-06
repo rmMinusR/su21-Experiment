@@ -52,7 +52,7 @@ public sealed class BaseMovementAction : IAction
         }
 
         //Transform back to global space
-        if(!isSimulated) velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = isSimulated ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         return velocity;
     }

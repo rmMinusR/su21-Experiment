@@ -25,6 +25,9 @@ public abstract class IActionEditor<TAction> : Editor
         simulatedInterval = EditorGUILayout.Slider(simulatedInterval, ((TAction)target).AllowedSimulatedInterval.x, ((TAction)target).AllowedSimulatedInterval.y);
         EditorGUILayout.PrefixLabel(new GUIContent("Timestep", "Time per simulation step, in seconds"));
         simulatedDeltaTime = EditorGUILayout.Slider(simulatedDeltaTime, 0.01f, 0.2f);
+
+        EditorGUILayout.Space();
+        if (GUILayout.Button(new GUIContent("Open Profiler"))) PlatformingProfiler.Open();
     }
 
     protected abstract void RenderAllGraphs(TAction obj);

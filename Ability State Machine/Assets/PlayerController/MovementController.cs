@@ -256,8 +256,4 @@ public sealed class MovementController : MonoBehaviour
             activeMovementTime.timeActive = 0;
         }
     }
-
-    public const float PRIO_DISABLES =  100;
-    public const float PRIO_ABILITY  =   10;
-    public const float PRIO_NEVER    = -100;
 }

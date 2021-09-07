@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 public static class Vector2Ext
@@ -39,20 +40,26 @@ public static class RandomExt
     public static T Choice<T>(T[] src) where T : class => src.Length > 0 ? src[Random.Range(0, src.Length)] : null;
 }
 
-public static class GizmosExt
+public static class EditorExt
 {
-    public static void DrawArrow(Vector3 from, Vector3 to) => DrawArrow(from, to, Vector3.forward);
-    public static void DrawArrow(Vector3 from, Vector3 to, Vector3 relUp)
+    public delegate void FuncDrawLine(Vector3 p1, Vector3 p2);
+    public delegate void FuncSetColor(Color c);
+
+    public static void DrawArrowHandles(Vector3 from, Vector3 to) => DrawArrow(from, to, Vector3.forward, Handles.DrawLine);
+    public static void DrawArrowGizmos(Vector3 from, Vector3 to) => DrawArrow(from, to, Vector3.forward, Gizmos.DrawLine);
+    public static void DrawArrow(Vector3 from, Vector3 to, Vector3 relUp, FuncDrawLine drawLine)
     {
-        float headSize = (from-to).magnitude * 0.4f;
+        float headSize = (from-to).magnitude * 0.25f;
         Vector3 headBase = (from-to).normalized * headSize;
 
-        Gizmos.DrawLine(from, to);
-        DrawPolyLine(true,
-                to,
-                to + Quaternion.AngleAxis(-45, relUp) * headBase,
-                to + Quaternion.AngleAxis( 45, relUp) * headBase
-            );
+        Vector3 head1 = to;
+        Vector3 head2 = to + Quaternion.AngleAxis(-45, relUp) * headBase;
+        Vector3 head3 = to + Quaternion.AngleAxis( 45, relUp) * headBase;
+
+        drawLine(from, to);
+        drawLine(head1, head2);
+        drawLine(head2, head3);
+        drawLine(head3, head1);
     }
 
     public static void DrawPolyLine(bool closed, params Vector3[] points)

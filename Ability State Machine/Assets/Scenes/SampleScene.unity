@@ -429,6 +429,8 @@ MonoBehaviour:
   staticFrictionSnap: 0.3
   groundControl: 0.9875
   airControl: 0.9
+  wallJumpAngle: 0.5
+  jumpForce: 4
 --- !u!114 &607304552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -492,10 +494,9 @@ MonoBehaviour:
   _lastGroundTime: -1000
   surfaceUp: {x: 0, y: 1}
   localMotionFalloff: 0.98
-  wallJumpAngle: 0.5
-  jumpForce: 7.5
   activeMovementTime:
     timeActive: 0
+    delta: 0
   __activeMovement: {fileID: 0}
   facing: 0
 --- !u!50 &607304555

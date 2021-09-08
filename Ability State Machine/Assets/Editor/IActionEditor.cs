@@ -32,7 +32,7 @@ public abstract class IActionEditor<TAction> : Editor
 
     protected abstract void RenderAllGraphs(TAction obj);
 
-    protected delegate Vector2 InputSimulatorFunc(float time);
+    protected delegate InputParam InputSimulatorFunc(float time);
     protected delegate Vector2 VelocitySimulatorFunc(Vector2 velocity, TimeParam time, InputParam input);
     protected delegate float VelocityLinearizerFunc(Vector2 velocity);
 
@@ -41,7 +41,11 @@ public abstract class IActionEditor<TAction> : Editor
         MovementController context, TAction obj, VelocitySimulatorFunc f)
     {
         RenderGraph(graphName, simulatedInterval, timestep,
-            t => new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
+            t => new InputParam {
+                global = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
+                local  = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
+                jump = false
+            },
             () => obj.DoSetup(context, null, true),
             f,
             () => obj.DoCleanup(context, null, true),
@@ -71,9 +75,7 @@ public abstract class IActionEditor<TAction> : Editor
             for (t.timeActive = timestep; t.timeActive <= simulatedInterval; t.timeActive += timestep)
             {
                 //Simulate
-                InputParam inputParam;
-                inputParam.global = inputParam.local = input(t.timeActive);
-                v = f(v, t, inputParam);
+                v = f(v, t, input(t.timeActive));
 
                 //Write keyframe
                 data.Add(new Keyframe(t.timeActive, lin(v), 1, 1, 0, 0));

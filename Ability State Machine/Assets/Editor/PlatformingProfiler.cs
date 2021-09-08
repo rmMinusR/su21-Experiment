@@ -215,6 +215,7 @@ public sealed class PlatformingProfiler : EditorWindow
                 InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
                 _ => throw new System.NotImplementedException(),
             };
+            input.jump = false; //TODO detect when to jump based on raycast ahead
 
             //Tick time and velocity
             data.time += timeResolution;

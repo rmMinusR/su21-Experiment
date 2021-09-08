@@ -17,9 +17,9 @@ public sealed class MovementController : MonoBehaviour
     {
         //Capture controls
         controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0];
-        controlMovement = controlsMap.Where(x => x.name == "Move").First();
-        controlJump     = controlsMap.Where(x => x.name == "Jump").First();
-
+        controlMovement = controlsMap.Where(x => x.name == "Move").First(); Debug.Assert(controlMovement != null);
+        controlJump     = controlsMap.Where(x => x.name == "Jump").First(); Debug.Assert(controlJump     != null);
+        
         _rb = GetComponent<Rigidbody2D>();
 
         //Ensure we have base movement
@@ -49,6 +49,7 @@ public sealed class MovementController : MonoBehaviour
     public float groundedness => 1 - Mathf.Clamp01((Time.time - _lastGroundTime) / ghostJumpTime);
     public bool IsGrounded => groundedness > 0.05f;
     public bool IsFullyGrounded => groundedness > 0.95f;
+    public void MarkUngrounded() => _lastGroundTime = -1000;
 
     [Header("Sloped-surface motion")]
     [SerializeField] [Range(0,1)] private float localMotionFalloff = 0.1f;
@@ -159,37 +160,6 @@ public sealed class MovementController : MonoBehaviour
 
     #endregion
 
-    #region Jumping
-
-    [Header("Jumping")]
-    [SerializeField] [Range(0, 1)] private float wallJumpAngle = 0.5f;
-    [SerializeField] [Min(0)]      private float jumpForce;
-
-    private bool _markShouldJump = false;
-
-    //To be called from Input component
-    public void OnJump()
-    {
-        if (IsGrounded && HasControl) _markShouldJump = true;
-    }
-
-    //To be called in physics code
-    private Vector2 _GetJumpDV()
-    {
-        Vector2 val = Vector2.zero;
-
-        if (_markShouldJump && IsGrounded)
-        {
-            val = Vector2.Lerp(-Physics2D.gravity.normalized, surfaceUp, wallJumpAngle).normalized * jumpForce;
-        }
-
-        _markShouldJump = false;
-        
-        return val;
-    }
-
-    #endregion
-
     void FixedUpdate()
     {
         _DoGroundCheck();
@@ -212,20 +182,15 @@ public sealed class MovementController : MonoBehaviour
         Debug.DrawLine(transform.position, transform.position + (Vector3)surfaceRight, Color.red, 0.2f);
         Debug.DrawLine(transform.position, transform.position + (Vector3)surfaceUp, Color.green, 0.2f);
 
-        //Apply gravity
-        //velocity += Physics2D.gravity * Time.fixedDeltaTime;
-
         //Update params
         activeMovementTime.timeActive += (activeMovementTime.delta = Time.fixedDeltaTime);
         input.global = controlMovement.ReadValue<Vector2>();
         input.local = surfaceToGlobal.inverse.MultiplyPoint(input.global);
+        input.jump = controlJump.ReadValue<float>() > 0.5f;
 
         //Execute currently-active movement policy if available, else default to base
         if(activeMovement != null) velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, IAction.PhysicsMode.Live);
         else                       velocity =   baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, IAction.PhysicsMode.Live);
-
-        //Apply jumping (if enqueued)
-        velocity += _GetJumpDV();
 
         //Apply anti-slide
         velocity = _ProcessFakeFriction(velocity);

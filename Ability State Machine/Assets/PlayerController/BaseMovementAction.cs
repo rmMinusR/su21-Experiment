@@ -20,6 +20,11 @@ public sealed class BaseMovementAction : IAction
     private float CurrentControl(float groundedness) => Mathf.Lerp(airControl, groundControl, groundedness);
 
 
+    [Header("Jumping")]
+    [SerializeField] [Range(0, 1)] private float wallJumpAngle = 0.5f;
+    [SerializeField] [Min(0)]      private float jumpForce;
+
+
     public override void DoSetup(MovementController context, IAction prev, bool isSimulated) { }
     public override void DoCleanup(MovementController context, IAction next, bool isSimulated) { }
 
@@ -53,6 +58,14 @@ public sealed class BaseMovementAction : IAction
 
         //Transform back to global space
         velocity = (mode==PhysicsMode.SimulateCurves) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+
+        //Handle jumping, if applicable
+        //TODO only on first press
+        if(context.IsGrounded && input.jump)
+        {
+            velocity += Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
+            context.MarkUngrounded();
+        }
 
         return velocity;
     }

@@ -67,12 +67,14 @@ public static class FacingExt
 [Serializable]
 public struct TimeParam
 {
-    [SerializeField] public float timeActive;
-    [NonSerialized]  public float delta;
+    public float timeActive;
+    public float delta;
 }
 
+[Serializable]
 public struct InputParam
 {
-    [NonSerialized] public Vector2 global;
-    [NonSerialized] public Vector2 local;
+    public Vector2 global;
+    public Vector2 local;
+    public bool jump;
 }

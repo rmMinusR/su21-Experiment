@@ -218,20 +218,21 @@ public sealed class MovementController : MonoBehaviour
         return context.currentAction.DoPhysics(context, velocity, mode);
     }
 
+    private IAction __activeMovement;
     public IAction activeMovement
     {
-        get => context.currentAction;
+        get => __activeMovement;
         set
         {
             //Abort if no value would change
-            if (value == context.currentAction) return;
+            if (value == __activeMovement) return;
 
             //Send entry/exit messages
-            if (context.currentAction != null) context.currentAction.DoCleanup(context, value, IAction.PhysicsMode.Live);
-            if (value != null) value.DoSetup(context, context.currentAction, IAction.PhysicsMode.Live);
+            if (__activeMovement != null) __activeMovement.DoCleanup(context, value, IAction.PhysicsMode.Live);
+            if (value != null) value.DoSetup(context, __activeMovement, IAction.PhysicsMode.Live);
 
             //Change value
-            context.currentAction = value;
+            __activeMovement = value;
             context.time.active = 0;
         }
     }

@@ -41,6 +41,7 @@ public abstract class IActionEditor<TAction> : Editor
         MovementController host, TAction obj, VelocitySimulatorFunc f)
     {
         MovementController.Context context = new MovementController.Context(host);
+        context.time.delta = timestep;
 
         RenderGraph(graphName, context, simulatedInterval, timestep,
             t => new InputParam {
@@ -65,23 +66,21 @@ public abstract class IActionEditor<TAction> : Editor
         try
         {
             Vector2 v = Vector2.zero;
-            TimeParam t;
-            t.stable = 0;
-            t.active = 0;
-            t.delta = timestep;
 
             //Write keyframe
-            data.Add(new Keyframe(t.active, lin(v), 0, 0, 0, 0));
+            data.Add(new Keyframe(context.time.stable, lin(v), 0, 0, 0, 0));
 
             enter(); //obj.OnPolicyEntry();
 
-            for (t.active = t.stable = timestep; t.stable <= simulatedInterval; t.active = t.stable += timestep)
+            for (context.time.active = context.time.stable = timestep; context.time.stable <= simulatedInterval; context.time.active = context.time.stable += context.time.delta)
             {
+                context.input = input(context.time.stable);
+
                 //Simulate
                 v = f(context, v);
 
                 //Write keyframe
-                data.Add(new Keyframe(t.stable, lin(v), 1, 1, 0, 0));
+                data.Add(new Keyframe(context.time.stable, lin(v), 1, 1, 0, 0));
             }
 
             exit(); //obj.OnPolicyExit();

@@ -57,11 +57,12 @@ public sealed class MovementController : MonoBehaviour
         }
 
         //Ground checking
-        [SerializeField] private float _lastGroundTime; public float lastGroundTime { get => _lastGroundTime; set => _lastGroundTime = value; }
+        [SerializeField] private float _lastGroundTime;
         public float GroundRatio => 1 - Mathf.Clamp01((time.stable - _lastGroundTime) / owner.ghostJumpTime);
         public bool IsGrounded => time.stable < _lastGroundTime + owner.ghostJumpTime;
         public bool IsFullyGrounded => time.stable <= owner.ghostJumpTime; //TODO does it need epsilon???
         public void MarkUngrounded() => _lastGroundTime = -1000;
+        public void MarkGrounded() => _lastGroundTime = time.stable;
 
         //Surface-local motion
         [SerializeField] private Vector2 _surfaceUp;
@@ -78,13 +79,13 @@ public sealed class MovementController : MonoBehaviour
         public InputParam input;
         public TimeParam time;
         public Facing facing;
-        public IAction currentAction;
+        [SerializeReference] public IAction currentAction;
     }
 
     #region Ground/ceiling checking
 
     [Header("Ground checking")]
-    [SerializeField] [Range(0, 180)]   private float _maxGroundAngle;            public float maxGroundAngle => _maxGroundAngle;
+    [SerializeField] [Range(0, 180)]   private float __maxGroundAngle;            public float maxGroundAngle => __maxGroundAngle;
     [SerializeField] [Min(0.01f)]      private float _ghostJumpTime = 0.05f;     public float ghostJumpTime  => _ghostJumpTime;
 
     [Header("Sloped-surface motion")]
@@ -108,12 +109,10 @@ public sealed class MovementController : MonoBehaviour
         {
             Contact i;
             i.contact = _tmpContactStorage[n];
-            i.angle = Vector2.Angle(-i.contact.normal, Physics2D.gravity); //Calculate angle of surface relative to current gravity field
+            i.angle = Mathf.Abs(Vector2.Angle(-i.contact.normal, Physics2D.gravity)); //Calculate angle of surface relative to current gravity field
             i.type = ResolveContactType(i.contact, i.angle);
 
-            if (!flattest.HasValue || ClimbOverride.Process(i.angle < flattest.Value.angle && flattest?.type.CompareTo(i.type) <= 0, i.contact.collider.gameObject)) {
-                flattest = i;
-            }
+            if (!flattest.HasValue || (ClimbOverride.Process(CanClimb(i), i.contact.collider.gameObject) && i.angle < flattest.Value.angle)) flattest = i;
         }
     }
 
@@ -123,7 +122,7 @@ public sealed class MovementController : MonoBehaviour
         if (flattest.HasValue)
         {
             //Do ground check
-            if (ClimbOverride.Process(flattest.Value.angle < maxGroundAngle, flattest.Value.contact.collider.gameObject)) context.lastGroundTime = Time.time;
+            if (ClimbOverride.Process(CanClimb(flattest.Value), flattest.Value.contact.collider.gameObject)) context.MarkGrounded();
 
             //Copy data for normals etc
             context.lastKnownFlattest = flattest.Value;
@@ -172,6 +171,8 @@ public sealed class MovementController : MonoBehaviour
         else                              return ContactType.GroundClimbable;
     }
 
+    private bool CanClimb(Contact c) => c.angle < maxGroundAngle && IsGrabbable(c.type);
+
     #endregion
 
     public Context context;
@@ -180,17 +181,21 @@ public sealed class MovementController : MonoBehaviour
     {
         _DoGroundCheck();
 
-        //Update context params
+        _UpdateContext();
+
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity, context, IAction.PhysicsMode.Live);
+    }
+
+    private void _UpdateContext()
+    {
         context.time.delta = Time.fixedDeltaTime;
         context.time.active += context.time.delta;
         context.time.stable += context.time.delta;
         context.input.global = controlMovement.ReadValue<Vector2>();
-        context.input.local  = context.surfaceToGlobal.inverse.MultiplyVector(context.input.global);
-        context.input.jump   = controlJump.ReadValue<float>() > 0.5f;
+        context.input.local = context.surfaceToGlobal.inverse.MultiplyVector(context.input.global);
+        context.input.jump = controlJump.ReadValue<float>() > 0.5f;
 
         context.currentAction = activeMovement != null ? activeMovement : baseMovement;
-
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, context, IAction.PhysicsMode.Live);
     }
 
     public Vector2 DoPhysicsUpdate(Vector2 velocity, Context context, IAction.PhysicsMode mode)
@@ -210,25 +215,23 @@ public sealed class MovementController : MonoBehaviour
         }
 
         //Execute currently-active movement action
-        return context.currentAction.DoPhysics(context, velocity, IAction.PhysicsMode.Live);
+        return context.currentAction.DoPhysics(context, velocity, mode);
     }
 
-    
-    [SerializeReference] private IAction __activeMovement = null;
     public IAction activeMovement
     {
-        get => __activeMovement;
+        get => context.currentAction;
         set
         {
             //Abort if no value would change
-            if (value == __activeMovement) return;
+            if (value == context.currentAction) return;
 
             //Send entry/exit messages
-            if (__activeMovement != null) __activeMovement.DoCleanup(context, value, IAction.PhysicsMode.Live);
-            if (value != null) value.DoSetup(context, __activeMovement, IAction.PhysicsMode.Live);
+            if (context.currentAction != null) context.currentAction.DoCleanup(context, value, IAction.PhysicsMode.Live);
+            if (value != null) value.DoSetup(context, context.currentAction, IAction.PhysicsMode.Live);
 
             //Change value
-            __activeMovement = value;
+            context.currentAction = value;
             context.time.active = 0;
         }
     }

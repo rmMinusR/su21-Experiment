@@ -489,16 +489,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e35cf9afb0e22e74190efe43343fda83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxGroundAngle: 45
-  ghostJumpTime: 0.15
-  _lastGroundTime: -1000
-  surfaceUp: {x: 0, y: 1}
-  localMotionFalloff: 0.98
-  activeMovementTime:
-    timeActive: 0
-    delta: 0
-  __activeMovement: {fileID: 0}
-  facing: 0
+  __maxGroundAngle: 45
+  _ghostJumpTime: 0.05
+  _localMotionFalloff: 0.1
+  context:
+    owner: {fileID: 0}
+    _lastGroundTime: 0
+    _surfaceUp: {x: 0, y: 0}
+    input:
+      global: {x: 0, y: 0}
+      local: {x: 0, y: 0}
+      jump: 0
+    time:
+      stable: 0
+      active: 0
+      delta: 0
+    facing: 0
+    currentAction: {fileID: 0}
 --- !u!50 &607304555
 Rigidbody2D:
   serializedVersion: 4

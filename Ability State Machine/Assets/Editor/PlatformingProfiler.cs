@@ -215,7 +215,7 @@ public sealed class PlatformingProfiler : EditorWindow
             };
             context.input.jump = false; //TODO detect when to jump based on raycast ahead
 
-            //Tick time and velocity
+            //Tick time and process velocity
             data.time += timeResolution;
             data.vel = character.DoPhysicsUpdate(data.vel, context, IAction.PhysicsMode.SimulatePath);
 
@@ -231,7 +231,6 @@ public sealed class PlatformingProfiler : EditorWindow
                 if (!data.grounded)
                 {
                     data.pos += data.vel * timeThisFrame;
-                    context.lastGroundTime = data.time;
                     timeThisFrame = 0;
                 }
                 //We hit ground = need to project along it
@@ -240,7 +239,7 @@ public sealed class PlatformingProfiler : EditorWindow
                     data.pos += groundCheck.fraction * timeThisFrame * data.vel + groundCheck.normal*physicsEpsilon;
                     data.vel = Vector2Ext.Proj(data.vel, groundTangent);
                     timeThisFrame *= 1 - groundCheck.fraction;
-                    context.lastGroundTime = data.time;
+                    context.MarkGrounded();
                 }
             }
             

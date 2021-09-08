@@ -38,7 +38,7 @@ public sealed class BaseMovementAction : IAction
         float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
         if(mode == PhysicsMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != PhysicsMode.SimulateCurves) velocity = _DoSurfaceSticking(context, velocity, context.time.delta);
+        if(mode != PhysicsMode.SimulateCurves) velocity += _DoSurfaceSticking(context);
 
         //Velocity to local space
         Vector2 localVelocity = (mode==PhysicsMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
@@ -68,26 +68,24 @@ public sealed class BaseMovementAction : IAction
             context.MarkUngrounded();
         }
 
-        velocity = _ProcessFakeFriction(velocity);
+        if (mode == PhysicsMode.Live) velocity = _ProcessFakeFriction(velocity);
 
         return velocity;
     }
 
-    Vector2 _DoSurfaceSticking(MovementController.Context context, Vector2 velocity, float deltaTime)
+    Vector2 _DoSurfaceSticking(MovementController.Context context)
     {
         if (context.lastKnownFlattest.HasValue)
         {
-            //If we're grounded and not trying to jump, and the last known flattest contact is considered grabbable (or we're in zero gravity)
-            bool grabbable = ClimbOverride.Process(MovementController.IsGrabbable(context.lastKnownFlattest.Value.type), context.lastKnownFlattest.Value.contact.collider.gameObject);
-            if (context.IsGrounded && grabbable && !context.input.jump)
+            //If we're on a surface and not trying to jump
+            if (context.IsGrounded && !context.input.jump)
             {
                 //Slope antislide
-                return velocity - Vector2Ext.Proj(Physics2D.gravity * deltaTime, context.surfaceRight);
+                return - Vector2Ext.Proj(Physics2D.gravity * context.time.delta, context.surfaceRight);
             }
-
         }
 
-        return velocity;
+        return Vector2.zero;
     }
 
     #region Fake friction on contact

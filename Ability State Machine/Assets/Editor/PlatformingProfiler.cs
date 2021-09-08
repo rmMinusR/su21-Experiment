@@ -163,6 +163,7 @@ public sealed class PlatformingProfiler : EditorWindow
             Handles.color = Color.magenta;
             MovementController.Context c = new MovementController.Context(character);
             c.currentAction = character.GetComponent<BaseMovementAction>();
+            c.time.delta = timeResolution;
             List<SimulatedPathData> path = SimulatePath(c);
             {
                 List<Vector3> vec3Path = path.ConvertAll(x => (Vector3)x.pos);
@@ -216,7 +217,7 @@ public sealed class PlatformingProfiler : EditorWindow
             context.input.jump = false; //TODO detect when to jump based on raycast ahead
 
             //Tick time and process velocity
-            data.time += timeResolution;
+            data.time = context.time.active = context.time.stable += context.time.delta;
             data.vel = character.DoPhysicsUpdate(data.vel, context, IAction.PhysicsMode.SimulatePath);
 
             //Check to see if we would hit anything while moving

@@ -102,31 +102,33 @@ public sealed class PlatformingProfiler : EditorWindow
         }
 
         EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Time", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Time resolution");
+            EditorGUILayout.PrefixLabel("Simulation resolution");
             float tmp = EditorGUILayout.Slider(timeResolution, 0.005f, 0.03f);
             if(timeResolution != tmp) { timeResolution = tmp; markRepaint = true; }
         }
         {
-            EditorGUILayout.PrefixLabel("Time label resolution");
+            EditorGUILayout.PrefixLabel("Label resolution");
             float tmp = EditorGUILayout.Slider(timeLabelResolution, 0.1f, 1f);
             if(timeLabelResolution != tmp) { timeLabelResolution = tmp; markRepaint = true; }
         }
         {
-            EditorGUILayout.PrefixLabel("Max time cutoff");
+            EditorGUILayout.PrefixLabel("Max cutoff");
             float tmp = EditorGUILayout.Slider(maxEndTime, 5f, 45f);
             if (maxEndTime != tmp) { maxEndTime = tmp; markRepaint = true; }
         }
 
         EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Physics", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Physics epsilon");
+            EditorGUILayout.PrefixLabel("Raycast epsilon");
             float tmp = EditorGUILayout.Slider(physicsEpsilon, 0.001f, 0.005f);
             if(physicsEpsilon != tmp) { physicsEpsilon = tmp; markRepaint = true; }
         }
 
         {
-            EditorGUILayout.PrefixLabel("Physics microframes");
+            EditorGUILayout.PrefixLabel("Surface normal microframes");
             int tmp = EditorGUILayout.IntSlider(nMicroframes, 1, 12);
             if(nMicroframes != tmp) { nMicroframes = tmp; markRepaint = true; }
         }
@@ -190,7 +192,7 @@ public sealed class PlatformingProfiler : EditorWindow
         InputParam input;
         float signBeforeMove;
         float lastGroundTime = -1000;
-        float groundedness() { return 1 - Mathf.Clamp01((Time.time - lastGroundTime) / character.ghostJumpTime); }
+        float groundedness() { return 1 - Mathf.Clamp01((data.time - lastGroundTime) / character.ghostJumpTime); }
         CastFunc cast = GetCastFunc(character.gameObject);
 
         IAction a = character.activeMovement != null ? character.activeMovement : character.GetComponent<BaseMovementAction>();
@@ -216,7 +218,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Tick time and velocity
             data.time += timeResolution;
-            data.vel = a.DoPhysics(character, data.vel, new TimeParam { timeActive = data.time, delta = timeResolution }, input, groundedness(), true) ;
+            data.vel = a.DoPhysics(character, data.vel, new TimeParam { timeActive = data.time, delta = timeResolution }, input, groundedness(), IAction.PhysicsMode.SimulatePath);
 
             //Check to see if we would hit anything while moving
             float timeThisFrame = timeResolution;
@@ -230,6 +232,7 @@ public sealed class PlatformingProfiler : EditorWindow
                 if (!data.grounded)
                 {
                     data.pos += data.vel * timeThisFrame;
+                    lastGroundTime = data.time;
                     timeThisFrame = 0;
                 }
                 //We hit ground = need to project along it

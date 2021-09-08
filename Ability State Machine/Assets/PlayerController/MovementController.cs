@@ -220,9 +220,9 @@ public sealed class MovementController : MonoBehaviour
         input.global = controlMovement.ReadValue<Vector2>();
         input.local = surfaceToGlobal.inverse.MultiplyPoint(input.global);
 
-        //Execute currently-active movement policy
-        if(activeMovement != null) velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
-        else                       velocity =   baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
+        //Execute currently-active movement policy if available, else default to base
+        if(activeMovement != null) velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, IAction.PhysicsMode.Live);
+        else                       velocity =   baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, IAction.PhysicsMode.Live);
 
         //Apply jumping (if enqueued)
         velocity += _GetJumpDV();

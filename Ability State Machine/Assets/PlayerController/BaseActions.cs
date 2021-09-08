@@ -6,6 +6,13 @@ using UnityEngine;
 /// </summary>
 public abstract class IAction : MonoBehaviour
 {
+    public enum PhysicsMode
+    {
+        Live,
+        SimulatePath,
+        SimulateCurves
+    }
+
 #if UNITY_EDITOR
     public abstract Vector2 AllowedSimulatedInterval { get; }
 #endif
@@ -31,7 +38,7 @@ public abstract class IAction : MonoBehaviour
     /// <param name="groundedness">0 = airborne, 1 = grounded</param>
     /// <param name="isSimulated">Are we simulating acceleration curves?</param>
     /// <returns>Rigidbody's new velocity</returns>
-    public abstract Vector2 DoPhysics(MovementController context, Vector2 currentVelocity, TimeParam time, InputParam input, float groundedness, bool isSimulated);
+    public abstract Vector2 DoPhysics(MovementController context, Vector2 currentVelocity, TimeParam time, InputParam input, float groundedness, PhysicsMode mode);
 
     /// <summary>
     /// Negative = local-left aka CCW, positive = local-right aka CW.

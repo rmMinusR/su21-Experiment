@@ -23,19 +23,19 @@ public sealed class BaseMovementAction : IAction
     public override void DoSetup(MovementController context, IAction prev, bool isSimulated) { }
     public override void DoCleanup(MovementController context, IAction next, bool isSimulated) { }
 
-    public override Vector2 DoPhysics(MovementController context, Vector2 velocity, TimeParam time, InputParam input, float groundedness, bool isSimulated)
+    public override Vector2 DoPhysics(MovementController context, Vector2 velocity, TimeParam time, InputParam input, float groundedness, PhysicsMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * time.delta;
 
         //Get user input
         float localInput = Vector2.Dot(input.global, context.surfaceRight);
-        if(!isSimulated) context.facing = FacingExt.Detect(localInput, 0.05f);
+        if(mode == PhysicsMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(!isSimulated) velocity = _DoSurfaceSticking(context, velocity, time.delta);
+        if(mode != PhysicsMode.SimulateCurves) velocity = _DoSurfaceSticking(context, velocity, time.delta);
 
         //Velocity to local space
-        Vector2 localVelocity = isSimulated ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = (mode==PhysicsMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(groundedness), time.delta)) * moveSpeed;
@@ -52,7 +52,7 @@ public sealed class BaseMovementAction : IAction
         }
 
         //Transform back to global space
-        velocity = isSimulated ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = (mode==PhysicsMode.SimulateCurves) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         return velocity;
     }

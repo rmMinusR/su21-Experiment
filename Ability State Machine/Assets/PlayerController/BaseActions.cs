@@ -19,8 +19,8 @@ public abstract class IAction : MonoBehaviour
     public abstract bool AllowEntry { get; }
     public abstract bool AllowExit { get; }
 
-    public abstract void DoSetup(MovementController context, IAction prev, bool isSimulated);
-    public abstract void DoCleanup(MovementController context, IAction next, bool isSimulated);
+    public abstract void DoSetup(MovementController.Context context, IAction prev, PhysicsMode mode);
+    public abstract void DoCleanup(MovementController.Context context, IAction next, PhysicsMode mode);
     
     /// <summary>
     /// While active, called as part of every physics update frame to run this
@@ -31,14 +31,14 @@ public abstract class IAction : MonoBehaviour
     /// Rigidbody2D.velocity will stutter if assigned multiple times in the same frame,
     /// and should NEVER be changed directly from this script. Rather, use this method.
     /// </summary>
-    /// <param name="context">MovementController host/context</param>
+    /// <param name="context">Host context</param>
     /// <param name="currentVelocity">Rigidbody's current velocity</param>
     /// <param name="time">Time tracking for this state</param>
     /// <param name="input">Global + surface-local input</param>
     /// <param name="groundedness">0 = airborne, 1 = grounded</param>
     /// <param name="isSimulated">Are we simulating acceleration curves?</param>
     /// <returns>Rigidbody's new velocity</returns>
-    public abstract Vector2 DoPhysics(MovementController context, Vector2 currentVelocity, TimeParam time, InputParam input, float groundedness, PhysicsMode mode);
+    public abstract Vector2 DoPhysics(MovementController.Context context, Vector2 currentVelocity, PhysicsMode mode);
 
     /// <summary>
     /// Negative = local-left aka CCW, positive = local-right aka CW.
@@ -67,7 +67,8 @@ public static class FacingExt
 [Serializable]
 public struct TimeParam
 {
-    public float timeActive;
+    public float stable;
+    public float active;
     public float delta;
 }
 

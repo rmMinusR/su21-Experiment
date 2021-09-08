@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class BaseMovementAction : IAction
@@ -25,28 +26,28 @@ public sealed class BaseMovementAction : IAction
     [SerializeField] [Min(0)]      private float jumpForce;
 
 
-    public override void DoSetup(MovementController context, IAction prev, bool isSimulated) { }
-    public override void DoCleanup(MovementController context, IAction next, bool isSimulated) { }
+    public override void DoSetup(MovementController.Context context, IAction prev, PhysicsMode mode) { }
+    public override void DoCleanup(MovementController.Context context, IAction next, PhysicsMode mode) { }
 
-    public override Vector2 DoPhysics(MovementController context, Vector2 velocity, TimeParam time, InputParam input, float groundedness, PhysicsMode mode)
+    public override Vector2 DoPhysics(MovementController.Context context, Vector2 velocity, PhysicsMode mode)
     {
         //Apply gravity
-        velocity += Physics2D.gravity * time.delta;
+        velocity += Physics2D.gravity * context.time.delta;
 
         //Get user input
-        float localInput = Vector2.Dot(input.global, context.surfaceRight);
+        float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
         if(mode == PhysicsMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != PhysicsMode.SimulateCurves) velocity = _DoSurfaceSticking(context, velocity, time.delta);
+        if(mode != PhysicsMode.SimulateCurves) velocity = _DoSurfaceSticking(context, velocity, context.time.delta);
 
         //Velocity to local space
         Vector2 localVelocity = (mode==PhysicsMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
-        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(groundedness), time.delta)) * moveSpeed;
+        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
 
         //Snappiness thresholding
-        if(groundedness > 0.05f) {
+        if(context.GroundRatio > 0.05f) {
             if(Mathf.Abs(localInput) > 0.01f) {
                 //Boost
                 if (Mathf.Abs(localVelocity.x) < _adjustedCutoffSnappiness && Mathf.Sign(localVelocity.x) == Mathf.Sign(localInput)) localVelocity.x = _adjustedCutoffSnappiness * Mathf.Sign(localVelocity.x);
@@ -61,29 +62,51 @@ public sealed class BaseMovementAction : IAction
 
         //Handle jumping, if applicable
         //TODO only on first press
-        if(context.IsGrounded && input.jump)
+        if(context.IsGrounded && context.input.jump)
         {
             velocity += Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
             context.MarkUngrounded();
         }
 
+        velocity = _ProcessFakeFriction(velocity);
+
         return velocity;
     }
 
-    Vector2 _DoSurfaceSticking(MovementController context, Vector2 velocity, float deltaTime)
+    Vector2 _DoSurfaceSticking(MovementController.Context context, Vector2 velocity, float deltaTime)
     {
-        if(context.lastKnownFlattest.HasValue)
+        if (context.lastKnownFlattest.HasValue)
         {
             //If we're grounded and not trying to jump, and the last known flattest contact is considered grabbable (or we're in zero gravity)
-            bool grabbable = ClimbOverride.Process(context.IsGrabbable(context.lastKnownFlattest.Value.type), context.lastKnownFlattest.Value.contact.collider.gameObject);
-            if (context.IsGrounded && grabbable && context.controlJump.ReadValue<float>() < 0.5f)
+            bool grabbable = ClimbOverride.Process(MovementController.IsGrabbable(context.lastKnownFlattest.Value.type), context.lastKnownFlattest.Value.contact.collider.gameObject);
+            if (context.IsGrounded && grabbable && !context.input.jump)
             {
                 //Slope antislide
                 return velocity - Vector2Ext.Proj(Physics2D.gravity * deltaTime, context.surfaceRight);
             }
-        
+
         }
-        
+
         return velocity;
     }
+
+    #region Fake friction on contact
+
+    private List<Vector2> fakeFrictionTangents = new List<Vector2>();
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        Vector2 normal = collision.GetContact(0).normal;
+        Vector2 tangent = new Vector2(normal.y, -normal.x);
+        fakeFrictionTangents.Add(tangent);
+    }
+
+    private Vector2 _ProcessFakeFriction(Vector2 velocity)
+    {
+        Vector2 @out = velocity;
+        foreach (Vector2 v in fakeFrictionTangents) @out = Vector2Ext.Proj(@out, v);
+        fakeFrictionTangents.Clear();
+        return @out;
+    }
+
+    #endregion
 }

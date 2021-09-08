@@ -161,7 +161,9 @@ public sealed class PlatformingProfiler : EditorWindow
         if (character != null)
         {
             Handles.color = Color.magenta;
-            List<SimulatedPathData> path = SimulatePath();
+            MovementController.Context c = new MovementController.Context(character);
+            c.currentAction = character.GetComponent<BaseMovementAction>();
+            List<SimulatedPathData> path = SimulatePath(c);
             {
                 List<Vector3> vec3Path = path.ConvertAll(x => (Vector3)x.pos);
                 Handles.DrawAAPolyLine(3, vec3Path.ToArray());
@@ -180,7 +182,7 @@ public sealed class PlatformingProfiler : EditorWindow
         public bool grounded;
     }
 
-    private List<SimulatedPathData> SimulatePath()
+    private List<SimulatedPathData> SimulatePath(MovementController.Context context)
     {
         List<SimulatedPathData> output = new List<SimulatedPathData>();
 
@@ -189,14 +191,10 @@ public sealed class PlatformingProfiler : EditorWindow
         data.vel = Vector2.zero;
         data.time = 0;
 
-        InputParam input;
         float signBeforeMove;
-        float lastGroundTime = -1000;
-        float groundedness() { return 1 - Mathf.Clamp01((data.time - lastGroundTime) / character.ghostJumpTime); }
         CastFunc cast = GetCastFunc(character.gameObject);
 
-        IAction a = character.activeMovement != null ? character.activeMovement : character.GetComponent<BaseMovementAction>();
-        a.DoSetup(character, null, true);
+        context.currentAction.DoSetup(context, null, IAction.PhysicsMode.SimulatePath);
         
         output.Add(data);
 
@@ -207,7 +205,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Calculate input
             Vector2 dp = endPosition - data.pos;
-            input.local = input.global = inputTargettingMode switch
+            context.input.local = context.input.global = inputTargettingMode switch
             {
                 InputTargettingMode.Direct   => dp.normalized,
                 InputTargettingMode.EightWay => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold), (float)FacingExt.Detect(dp.y, snapInputThreshold)),
@@ -215,11 +213,11 @@ public sealed class PlatformingProfiler : EditorWindow
                 InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
                 _ => throw new System.NotImplementedException(),
             };
-            input.jump = false; //TODO detect when to jump based on raycast ahead
+            context.input.jump = false; //TODO detect when to jump based on raycast ahead
 
             //Tick time and velocity
             data.time += timeResolution;
-            data.vel = a.DoPhysics(character, data.vel, new TimeParam { timeActive = data.time, delta = timeResolution }, input, groundedness(), IAction.PhysicsMode.SimulatePath);
+            data.vel = character.DoPhysicsUpdate(data.vel, context, IAction.PhysicsMode.SimulatePath);
 
             //Check to see if we would hit anything while moving
             float timeThisFrame = timeResolution;
@@ -233,7 +231,7 @@ public sealed class PlatformingProfiler : EditorWindow
                 if (!data.grounded)
                 {
                     data.pos += data.vel * timeThisFrame;
-                    lastGroundTime = data.time;
+                    context.lastGroundTime = data.time;
                     timeThisFrame = 0;
                 }
                 //We hit ground = need to project along it
@@ -242,7 +240,7 @@ public sealed class PlatformingProfiler : EditorWindow
                     data.pos += groundCheck.fraction * timeThisFrame * data.vel + groundCheck.normal*physicsEpsilon;
                     data.vel = Vector2Ext.Proj(data.vel, groundTangent);
                     timeThisFrame *= 1 - groundCheck.fraction;
-                    lastGroundTime = data.time;
+                    context.lastGroundTime = data.time;
                 }
             }
             
@@ -252,7 +250,7 @@ public sealed class PlatformingProfiler : EditorWindow
         //Until we reach our destination, or run out of simulation time
         while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
-        a.DoCleanup(character, null, true);
+        context.currentAction.DoCleanup(context, null, IAction.PhysicsMode.SimulatePath);
 
         return output;
     }

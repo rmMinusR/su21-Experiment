@@ -33,28 +33,30 @@ public abstract class IActionEditor<TAction> : Editor
     protected abstract void RenderAllGraphs(TAction obj);
 
     protected delegate InputParam InputSimulatorFunc(float time);
-    protected delegate Vector2 VelocitySimulatorFunc(Vector2 velocity, TimeParam time, InputParam input);
+    protected delegate Vector2 VelocitySimulatorFunc(MovementController.Context context, Vector2 velocity);
     protected delegate float VelocityLinearizerFunc(Vector2 velocity);
 
     //Basic version with defaults for shortcuts and simple tests
     protected static void RenderGraph(string graphName, float simulatedInterval, float timestep,
-        MovementController context, TAction obj, VelocitySimulatorFunc f)
+        MovementController host, TAction obj, VelocitySimulatorFunc f)
     {
-        RenderGraph(graphName, simulatedInterval, timestep,
+        MovementController.Context context = new MovementController.Context(host);
+
+        RenderGraph(graphName, context, simulatedInterval, timestep,
             t => new InputParam {
                 global = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
                 local  = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
                 jump = false
             },
-            () => obj.DoSetup(context, null, true),
+            () => obj.DoSetup(context, null, IAction.PhysicsMode.SimulateCurves),
             f,
-            () => obj.DoCleanup(context, null, true),
+            () => obj.DoCleanup(context, null, IAction.PhysicsMode.SimulateCurves),
             v => v.x
         );
     }
 
     //Explicit version for specific tests
-    protected static void RenderGraph(string graphName, float simulatedInterval, float timestep,
+    protected static void RenderGraph(string graphName, MovementController.Context context, float simulatedInterval, float timestep,
         InputSimulatorFunc input, Action enter, VelocitySimulatorFunc f, Action exit, VelocityLinearizerFunc lin)
     {
         List<Keyframe> data = new List<Keyframe>();
@@ -64,21 +66,22 @@ public abstract class IActionEditor<TAction> : Editor
         {
             Vector2 v = Vector2.zero;
             TimeParam t;
-            t.timeActive = 0;
+            t.stable = 0;
+            t.active = 0;
             t.delta = timestep;
 
             //Write keyframe
-            data.Add(new Keyframe(t.timeActive, lin(v), 0, 0, 0, 0));
+            data.Add(new Keyframe(t.active, lin(v), 0, 0, 0, 0));
 
             enter(); //obj.OnPolicyEntry();
 
-            for (t.timeActive = timestep; t.timeActive <= simulatedInterval; t.timeActive += timestep)
+            for (t.active = t.stable = timestep; t.stable <= simulatedInterval; t.active = t.stable += timestep)
             {
                 //Simulate
-                v = f(v, t, input(t.timeActive));
+                v = f(context, v);
 
                 //Write keyframe
-                data.Add(new Keyframe(t.timeActive, lin(v), 1, 1, 0, 0));
+                data.Add(new Keyframe(t.stable, lin(v), 1, 1, 0, 0));
             }
 
             exit(); //obj.OnPolicyExit();

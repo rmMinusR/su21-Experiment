@@ -13,12 +13,53 @@ public sealed class PlatformingProfiler : EditorWindow
         OnlyX,
         OnlyY
     }
-    const float EIGHT_WAY_THRESHOLD = 0.05f;
 
     [MenuItem("Tools/Platforming Profiler")]
     public static void Open()
     {
         EditorWindow.GetWindow(typeof(PlatformingProfiler));
+    }
+
+    private delegate RaycastHit2D CastFunc(Vector2 pos, Vector2 dir);
+
+    private static CastFunc GetCastFunc(GameObject obj)
+    {
+        foreach (Collider2D coll in obj.GetComponents<Collider2D>())
+        {
+            if (coll is CapsuleCollider2D cc) return (pos, dir) => Physics2D.CapsuleCast(pos+cc.offset, cc.size, cc.direction, 0, dir.normalized, dir.magnitude);
+            else Debug.LogWarning("Unsupported collider: " + coll.GetType().Name);
+        }
+
+        throw new System.NotImplementedException();
+    }
+
+    #endregion
+
+    #region Setup/cleanup code
+
+    private void TryCaptureMovementController()
+    {
+        //If we don't have a MovementController captured, try to do so on changing selection
+        if(Selection.activeGameObject != null)
+        {
+            MovementController m = Selection.activeGameObject.GetComponent<MovementController>();
+            if (character == null && m != null) character = m;
+        }
+    }
+
+    private void Awake() => TryCaptureMovementController();
+
+    private void OnFocus()
+    {
+        SceneView.duringSceneGui -= this.OnSceneGUI;
+        SceneView.duringSceneGui += this.OnSceneGUI;
+
+        TryCaptureMovementController();
+    }
+
+    private void OnDestroy()
+    {
+        SceneView.duringSceneGui -= this.OnSceneGUI;
     }
 
     #endregion
@@ -29,31 +70,18 @@ public sealed class PlatformingProfiler : EditorWindow
 
     private Vector2 startPosition = Vector2.left;
     private Vector2 endPosition   = Vector2.right;
+    private float maxEndTime = 10f;
+
+    private float snapInputThreshold = 0.05f;
+
+    private float timeResolution = 0.01f;
+    private float timeLabelResolution = 0.5f;
+    private float physicsEpsilon = 0.0015f;
+    private int nMicroframes = 1;
 
     private InputTargettingMode inputTargettingMode = InputTargettingMode.EightWay;
 
     #endregion
-
-    private void OnSelectionChange()
-    {
-        //If we don't have a MovementController captured, try to do so on changing selection
-        if(Selection.activeGameObject != null)
-        {
-            MovementController m = Selection.activeGameObject.GetComponent<MovementController>();
-            if (character == null && m != null) character = m;
-        }
-    }
-
-    private void OnFocus()
-    {
-        SceneView.duringSceneGui -= this.OnSceneGUI;
-        SceneView.duringSceneGui += this.OnSceneGUI;
-    }
-
-    private void OnDestroy()
-    {
-        SceneView.duringSceneGui -= this.OnSceneGUI;
-    }
 
     private void OnGUI()
     {
@@ -61,10 +89,48 @@ public sealed class PlatformingProfiler : EditorWindow
 
         character = (MovementController) EditorGUILayout.ObjectField("Agent", character, typeof(MovementController), true);
 
-        EditorGUILayout.LabelField("Input targetting mode");
-        InputTargettingMode tmp = (InputTargettingMode) EditorGUILayout.EnumPopup(inputTargettingMode);
-        if (inputTargettingMode != tmp) { inputTargettingMode = tmp; markRepaint = true; }
+        {
+            EditorGUILayout.PrefixLabel("Input targetting mode");
+            InputTargettingMode tmp = (InputTargettingMode) EditorGUILayout.EnumPopup(inputTargettingMode);
+            if (inputTargettingMode != tmp) { inputTargettingMode = tmp; markRepaint = true; }
+        }
         
+        if(inputTargettingMode != InputTargettingMode.Direct)
+        {
+            EditorGUILayout.PrefixLabel("Snap threshold");
+            snapInputThreshold = EditorGUILayout.Slider(snapInputThreshold, 0.01f, 1);
+        }
+
+        EditorGUILayout.Space();
+        {
+            EditorGUILayout.PrefixLabel("Time resolution");
+            float tmp = EditorGUILayout.Slider(timeResolution, 0.005f, 0.03f);
+            if(timeResolution != tmp) { timeResolution = tmp; markRepaint = true; }
+        }
+        {
+            EditorGUILayout.PrefixLabel("Time label resolution");
+            float tmp = EditorGUILayout.Slider(timeLabelResolution, 0.1f, 1f);
+            if(timeLabelResolution != tmp) { timeLabelResolution = tmp; markRepaint = true; }
+        }
+        {
+            EditorGUILayout.PrefixLabel("Max time cutoff");
+            float tmp = EditorGUILayout.Slider(maxEndTime, 5f, 45f);
+            if (maxEndTime != tmp) { maxEndTime = tmp; markRepaint = true; }
+        }
+
+        EditorGUILayout.Space();
+        {
+            EditorGUILayout.PrefixLabel("Physics epsilon");
+            float tmp = EditorGUILayout.Slider(physicsEpsilon, 0.001f, 0.005f);
+            if(physicsEpsilon != tmp) { physicsEpsilon = tmp; markRepaint = true; }
+        }
+
+        {
+            EditorGUILayout.PrefixLabel("Physics microframes");
+            int tmp = EditorGUILayout.IntSlider(nMicroframes, 1, 12);
+            if(nMicroframes != tmp) { nMicroframes = tmp; markRepaint = true; }
+        }
+
         if (markRepaint) SceneView.RepaintAll();
     }
 
@@ -93,12 +159,12 @@ public sealed class PlatformingProfiler : EditorWindow
         if (character != null)
         {
             Handles.color = Color.magenta;
-            List<SimulatedPathData> path = SimulatePath(0.05f);
+            List<SimulatedPathData> path = SimulatePath();
             {
                 List<Vector3> vec3Path = path.ConvertAll(x => (Vector3)x.pos);
                 Handles.DrawAAPolyLine(3, vec3Path.ToArray());
             }
-            //foreach(SimulatedPathData i in path) Handles.Label(i.pos, i.time.ToString());
+            for(float i = 0; i < path.Count; i += timeLabelResolution/timeResolution) Handles.Label(path[(int)i].pos, path[(int)i].time.ToString("n2")+"s");
         }
 
         EditorGUI.EndChangeCheck();
@@ -112,7 +178,7 @@ public sealed class PlatformingProfiler : EditorWindow
         public bool grounded;
     }
 
-    private List<SimulatedPathData> SimulatePath(float timeStep)
+    private List<SimulatedPathData> SimulatePath()
     {
         List<SimulatedPathData> output = new List<SimulatedPathData>();
 
@@ -123,10 +189,9 @@ public sealed class PlatformingProfiler : EditorWindow
 
         InputParam input;
         float signBeforeMove;
-
-        //Small offset to make sure raycaster actually hits
-        float smallSafetyOffset = 0.005f;
-        Vector2 makeSafetyOffset(Vector2 v) => v.normalized * -smallSafetyOffset;
+        float lastGroundTime = -1000;
+        float groundedness() { return 1 - Mathf.Clamp01((Time.time - lastGroundTime) / character.ghostJumpTime); }
+        CastFunc cast = GetCastFunc(character.gameObject);
 
         IAction a = character.activeMovement != null ? character.activeMovement : character.GetComponent<BaseMovementAction>();
         a.DoSetup(character, null, true);
@@ -143,36 +208,45 @@ public sealed class PlatformingProfiler : EditorWindow
             input.local = input.global = inputTargettingMode switch
             {
                 InputTargettingMode.Direct   => dp.normalized,
-                InputTargettingMode.EightWay => new Vector2((float)FacingExt.Detect(dp.x, EIGHT_WAY_THRESHOLD), (float)FacingExt.Detect(dp.y, EIGHT_WAY_THRESHOLD)),
-                InputTargettingMode.OnlyX    => new Vector2((float)FacingExt.Detect(dp.x, EIGHT_WAY_THRESHOLD), 0),
-                InputTargettingMode.OnlyY    => new Vector2(0, (float)FacingExt.Detect(dp.y, EIGHT_WAY_THRESHOLD)),
+                InputTargettingMode.EightWay => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold), (float)FacingExt.Detect(dp.y, snapInputThreshold)),
+                InputTargettingMode.OnlyX    => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold),                                                 0),
+                InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
                 _ => throw new System.NotImplementedException(),
             };
 
             //Tick time and velocity
-            data.time += timeStep;
-            data.vel = a.DoPhysics(character, data.vel, new TimeParam { timeActive = data.time, delta = timeStep }, input, data.grounded ? 1 : 0, true) ;
-            
-            //Check to see if we would hit anything while moving
-            RaycastHit2D groundCheck = Physics2D.Raycast(data.pos + Vector2.up*smallSafetyOffset, data.vel.normalized, data.vel.magnitude * timeStep + smallSafetyOffset);
-            Vector2 groundTangent = new Vector2(groundCheck.normal.y, -groundCheck.normal.x);
-            data.grounded = groundCheck.collider != null;
-            
-            //We didn't hit ground = move normally
-            if (!data.grounded) data.pos += data.vel * timeStep;
-            //We hit ground = need to project along it
-            else {
-                Vector2 projVel = Vector2Ext.Proj(data.vel, groundTangent);
-                RaycastHit2D projectingPositioner = Physics2D.Raycast(data.pos + projVel * timeStep + makeSafetyOffset(data.vel), -groundCheck.normal, Vector2.Dot(data.vel, groundTangent) + smallSafetyOffset);
-                data.pos = projectingPositioner.collider != null ? projectingPositioner.point : (data.pos + projVel * timeStep);
-                data.vel = projVel;
-            }
+            data.time += timeResolution;
+            data.vel = a.DoPhysics(character, data.vel, new TimeParam { timeActive = data.time, delta = timeResolution }, input, groundedness(), true) ;
 
+            //Check to see if we would hit anything while moving
+            float timeThisFrame = timeResolution;
+            for(int i = 0; i < nMicroframes && timeThisFrame > timeResolution*0.02f; ++i)
+            {
+                RaycastHit2D groundCheck = cast(data.pos + Vector2.up*physicsEpsilon, data.vel*timeThisFrame);
+                Vector2 groundTangent = new Vector2(groundCheck.normal.y, -groundCheck.normal.x);
+                data.grounded = groundCheck.collider != null;
+
+                //We didn't hit ground = move normally
+                if (!data.grounded)
+                {
+                    data.pos += data.vel * timeThisFrame;
+                    timeThisFrame = 0;
+                }
+                //We hit ground = need to project along it
+                else
+                {
+                    data.pos += groundCheck.fraction * timeThisFrame * data.vel + groundCheck.normal*physicsEpsilon;
+                    data.vel = Vector2Ext.Proj(data.vel, groundTangent);
+                    timeThisFrame *= 1 - groundCheck.fraction;
+                    lastGroundTime = data.time;
+                }
+            }
+            
             //Mark frame
             output.Add(data);
         }
         //Until we reach our destination, or run out of simulation time
-        while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < 10f);
+        while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
         a.DoCleanup(character, null, true);
 

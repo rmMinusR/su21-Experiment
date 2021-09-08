@@ -30,7 +30,7 @@ public sealed class MovementController : MonoBehaviour
     #region Memoized component references
 
     private Rigidbody2D _rb;
-
+    
     public BaseMovementAction baseMovement { get; private set; }
 
     #endregion
@@ -39,7 +39,7 @@ public sealed class MovementController : MonoBehaviour
 
     [Header("Ground checking")]
     [SerializeField] [Range(0, 180)]   private float maxGroundAngle;
-    [SerializeField] [Min(0.01f)]      private float ghostJumpTime = 0.01f;
+                     [Min(0.01f)]      public  float ghostJumpTime = 0.01f;
     [SerializeField] [HideInInspector] private float _lastGroundTime = -1000;
 
     public Vector2 surfaceRight => new Vector2(surfaceUp.y, -surfaceUp.x);
@@ -222,7 +222,7 @@ public sealed class MovementController : MonoBehaviour
 
         //Execute currently-active movement policy
         if(activeMovement != null) velocity = activeMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
-        else velocity = baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
+        else                       velocity =   baseMovement.DoPhysics(this, velocity, activeMovementTime, input, groundedness, false);
 
         //Apply jumping (if enqueued)
         velocity += _GetJumpDV();

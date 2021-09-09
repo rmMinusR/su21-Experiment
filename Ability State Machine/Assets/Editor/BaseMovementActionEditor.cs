@@ -9,11 +9,17 @@ public class BaseMovementActionEditor : IActionEditor<BaseMovementAction>
         MovementController host = obj.GetComponent<MovementController>();
 
         RenderGraph("Grounded", base.simulatedInterval, base.simulatedDeltaTime, host, obj,
-            (c, v) => obj.DoPhysics(c, v, IAction.PhysicsMode.SimulateCurves)
+            (c, v) => {
+                c.MarkGrounded();
+                return obj.DoPhysics(c, v, IAction.PhysicsMode.SimulateCurves);
+            }
         );
 
         RenderGraph("Airborne", base.simulatedInterval, base.simulatedDeltaTime, host, obj,
-            (c, v) => obj.DoPhysics(c, v, IAction.PhysicsMode.SimulateCurves)
+            (c, v) => {
+                c.MarkUngrounded();
+                return obj.DoPhysics(c, v, IAction.PhysicsMode.SimulateCurves);
+            }
         );
     }
 }

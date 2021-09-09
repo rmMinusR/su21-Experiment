@@ -64,7 +64,9 @@ public sealed class BaseMovementAction : IAction
         //TODO only on first press
         if(context.IsGrounded && context.input.jump)
         {
-            velocity += Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
+            Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
+            velocity.y = jv.y;
+            velocity.x += jv.x;
             context.MarkUngrounded();
         }
 

@@ -162,11 +162,11 @@ public sealed class MovementController : MonoBehaviour
         public ContactType type;
     }
 
-    public ContactType ResolveContactType(ContactPoint2D contact, float contactAngle)
+    public ContactType ResolveContactType(ContactPoint2D? contact, float contactAngle)
     {
         //TODO if(contact.collider.GetComponent<Hazard>() != null) return ContactType.Hazard;
-        if(contact.collider.GetComponent<ClimbOverride>() is ClimbOverride co1 && co1.mode == ClimbOverride.Mode.AlwaysClimbable) return ContactType.AlwaysClimbable;
-        if(contact.collider.GetComponent<ClimbOverride>() is ClimbOverride co2 && co2.mode == ClimbOverride.Mode.NeverClimbable ) return ContactType.NeverClimbable;
+        if(contact != null && contact.Value.collider.GetComponent<ClimbOverride>() is ClimbOverride co1 && co1.mode == ClimbOverride.Mode.AlwaysClimbable) return ContactType.AlwaysClimbable;
+        if(contact != null && contact.Value.collider.GetComponent<ClimbOverride>() is ClimbOverride co2 && co2.mode == ClimbOverride.Mode.NeverClimbable ) return ContactType.NeverClimbable;
         if(contactAngle > maxGroundAngle) return ContactType.GroundTooSteep;
         else                              return ContactType.GroundClimbable;
     }

@@ -8,7 +8,7 @@ public static class Vector2Ext
 {
     public static Vector2 Proj(Vector2 from, Vector2 onto)
     {
-        return Vector2.Dot(from, onto) / onto.magnitude.Sq() * onto;
+        return Vector2.Dot(from, onto) / onto.sqrMagnitude * onto;
     }
 }
 

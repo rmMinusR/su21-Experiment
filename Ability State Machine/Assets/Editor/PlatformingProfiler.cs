@@ -32,6 +32,17 @@ public sealed class PlatformingProfiler : EditorWindow
 
         throw new System.NotImplementedException();
     }
+    
+    private static Vector2 GetColliderSize(GameObject obj)
+    {
+        foreach (Collider2D coll in obj.GetComponents<Collider2D>())
+        {
+            if (coll is CapsuleCollider2D cc) return cc.size;
+            else Debug.LogWarning("Unsupported collider: " + coll.GetType().Name);
+        }
+
+        throw new System.NotImplementedException();
+    }
 
     #endregion
 
@@ -74,6 +85,11 @@ public sealed class PlatformingProfiler : EditorWindow
 
     private float snapInputThreshold = 0.05f;
 
+    private float jumpLedgeProbing = 2f;
+    private float jumpLedgeThreshold = 1f;
+    private bool jumpIfLedge = true;
+    private bool jumpIfTooSteep = false;
+
     private float timeResolution = 0.01f;
     private float timeLabelResolution = 0.5f;
     private float physicsEpsilon = 0.0015f;
@@ -89,47 +105,57 @@ public sealed class PlatformingProfiler : EditorWindow
 
         character = (MovementController) EditorGUILayout.ObjectField("Agent", character, typeof(MovementController), true);
 
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Input settings", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Input targetting mode");
-            InputTargettingMode tmp = (InputTargettingMode) EditorGUILayout.EnumPopup(inputTargettingMode);
+            InputTargettingMode tmp = (InputTargettingMode) EditorGUILayout.EnumPopup("Input targetting mode", inputTargettingMode);
             if (inputTargettingMode != tmp) { inputTargettingMode = tmp; markRepaint = true; }
         }
-        
-        if(inputTargettingMode != InputTargettingMode.Direct)
+        if (inputTargettingMode != InputTargettingMode.Direct) {
+            float tmp = EditorGUILayout.Slider("Snap threshold", snapInputThreshold, 0.01f, 1);
+            if (snapInputThreshold != tmp) { snapInputThreshold = tmp; markRepaint = true; }
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Jump conditions", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Snap threshold");
-            snapInputThreshold = EditorGUILayout.Slider(snapInputThreshold, 0.01f, 1);
+            bool tmp = EditorGUILayout.Toggle("Slope too steep", jumpIfTooSteep);
+            if (jumpIfTooSteep != tmp) { jumpIfTooSteep = tmp; markRepaint = true; }
+        }
+        {
+            bool tmp = EditorGUILayout.Toggle("Approaching ledge", jumpIfLedge);
+            if (jumpIfLedge != tmp) { jumpIfLedge = tmp; markRepaint = true; }
+        }
+        if(jumpIfLedge) {
+            float tmp = EditorGUILayout.Slider("Ledge probe (m)", jumpLedgeProbing, 1, 10);
+            if (jumpLedgeProbing != tmp) { jumpLedgeProbing = tmp; markRepaint = true; }
+            tmp = EditorGUILayout.Slider("Ledge drop threshold (m)", jumpLedgeThreshold, 1, 10);
+            if (jumpLedgeThreshold != tmp) { jumpLedgeThreshold = tmp; markRepaint = true; }
         }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Time", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Simulation resolution");
-            float tmp = EditorGUILayout.Slider(timeResolution, 0.005f, 0.03f);
+            float tmp = 1/EditorGUILayout.Slider("Simulation resolution (FPS)", Mathf.Clamp(1/timeResolution, 60, 240), 60, 240);
             if(timeResolution != tmp) { timeResolution = tmp; markRepaint = true; }
         }
         {
-            EditorGUILayout.PrefixLabel("Label resolution");
-            float tmp = EditorGUILayout.Slider(timeLabelResolution, 0.1f, 1f);
+            float tmp = EditorGUILayout.Slider("Label interval (s)", timeLabelResolution, 0.1f, 1f);
             if(timeLabelResolution != tmp) { timeLabelResolution = tmp; markRepaint = true; }
         }
         {
-            EditorGUILayout.PrefixLabel("Max cutoff");
-            float tmp = EditorGUILayout.Slider(maxEndTime, 5f, 45f);
+            float tmp = EditorGUILayout.Slider("Max. duration simulated (s)", maxEndTime, 5f, 45f);
             if (maxEndTime != tmp) { maxEndTime = tmp; markRepaint = true; }
         }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Physics", EditorStyles.boldLabel);
         {
-            EditorGUILayout.PrefixLabel("Raycast epsilon");
-            float tmp = EditorGUILayout.Slider(physicsEpsilon, 0.001f, 0.005f);
+            float tmp = EditorGUILayout.Slider("Raycast backpedal", physicsEpsilon, 0.001f, 0.005f);
             if(physicsEpsilon != tmp) { physicsEpsilon = tmp; markRepaint = true; }
         }
-
         {
-            EditorGUILayout.PrefixLabel("Surface normal microframes");
-            int tmp = EditorGUILayout.IntSlider(nMicroframes, 1, 12);
+            int tmp = EditorGUILayout.IntSlider("Tangents processed/frame", nMicroframes, 1, 12);
             if(nMicroframes != tmp) { nMicroframes = tmp; markRepaint = true; }
         }
 
@@ -144,32 +170,69 @@ public sealed class PlatformingProfiler : EditorWindow
         //Draw arrow
         startPosition = Handles.PositionHandle(startPosition, Quaternion.identity);
         endPosition   = Handles.PositionHandle(endPosition, Quaternion.identity);
-        Handles.color = Color.green;
-        EditorExt.DrawArrow(startPosition, endPosition, Vector3.forward, (p1, p2) => Handles.DrawAAPolyLine(p1, p2));
+        if (character == null)
+        {
+            Handles.color = Color.green;
+            EditorExt.DrawArrow(startPosition, endPosition, Vector3.forward, (p1, p2) => Handles.DrawAAPolyLine(p1, p2));
+        }
 
         //Draw raycast down from start and end pos
-        Handles.color = Color.cyan;
+        Handles.color = Color.red;
         {
             RaycastHit2D rc = Physics2D.Raycast(startPosition, Vector2.down, 100f);
-            if (rc.collider != null) Handles.DrawDottedLine(startPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 2);
+            if (rc.collider != null) Handles.DrawDottedLine(startPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
         }
         {
             RaycastHit2D rc = Physics2D.Raycast(endPosition, Vector2.down, 100f);
-            Handles.DrawDottedLine(endPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 2);
+            Handles.DrawDottedLine(endPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
         }
 
         if (character != null)
         {
-            Handles.color = Color.magenta;
+            //Setup
             MovementController.Context c = new MovementController.Context(character);
             c.currentAction = character.GetComponent<BaseMovementAction>();
             c.time.delta = timeResolution;
+
+            //Simulate
             List<SimulatedPathData> path = SimulatePath(c);
-            {
-                List<Vector3> vec3Path = path.ConvertAll(x => (Vector3)x.pos);
-                Handles.DrawAAPolyLine(3, vec3Path.ToArray());
-            }
+
+            //Render basic path
+            Handles.color = Color.green;
+            Handles.DrawAAPolyLine(3, path.ConvertAll(x => (Vector3)x.pos).ToArray());
+
+            //Render time labels
             for(float i = 0; i < path.Count; i += timeLabelResolution/timeResolution) Handles.Label(path[(int)i].pos, path[(int)i].time.ToString("n2")+"s");
+
+            //Render jump timing labels
+            //TODO move to own method
+            RaycastHit2D? lastFrame = Physics2D.Raycast(path[0].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
+            for (int i = 1; i < path.Count; ++i)
+            {
+                if(!path[i].grounded)// && Vector2.Dot(path[i].vel, Physics2D.gravity) > 0)
+                {
+                    RaycastHit2D thisFrame = Physics2D.Raycast(path[i].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
+                    
+                    if (lastFrame != null && thisFrame.collider != null //Detect when a collider first enters our raycast
+                    && (lastFrame.Value.collider == null || thisFrame.distance-lastFrame.Value.distance > jumpLedgeThreshold)) //And when it's counted as a ledge
+                    {
+                        //Calculate time to impact
+                        //Uses Y only but X would prob work too
+                        float s = -thisFrame.distance;
+                        float v = path[i].vel.y;
+                        float a = Physics2D.gravity.y;
+
+                        //s = ut + 1/2 * at^2
+                        //t = (u + sqrt(u^2 + 8sa))/4sa
+                        float t = (v + Mathf.Sqrt(v*v + 8*s*a))/(4*s*a);
+
+                        Handles.color = Color.cyan;
+                        Handles.DrawDottedLine(path[i].pos, thisFrame.point, 2);
+                        Handles.Label(thisFrame.point, (t*1000).ToString("n0")+"ms to react");
+                    }
+                    lastFrame = thisFrame;
+                } else lastFrame = null;
+            }
         }
 
         EditorGUI.EndChangeCheck();
@@ -194,6 +257,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
         float signBeforeMove;
         CastFunc cast = GetCastFunc(character.gameObject);
+        Vector2 colliderSize = GetColliderSize(character.gameObject);
 
         context.currentAction.DoSetup(context, null, IAction.PhysicsMode.SimulatePath);
         
@@ -214,9 +278,30 @@ public sealed class PlatformingProfiler : EditorWindow
                 InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
                 _ => throw new System.NotImplementedException(),
             };
-            context.input.jump = false; //TODO detect when to jump based on raycast ahead
 
-            //Tick time and process velocity
+            //Decide whether to jump
+            {
+                Vector2 posPlusVel = data.pos + data.vel * context.time.delta * 4;
+                RaycastHit2D ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
+                Vector2 here = ledgeDet0.collider != null ? ledgeDet0.point : (data.pos + Vector2.down * (jumpLedgeProbing+colliderSize.y));
+                RaycastHit2D ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
+                Vector2 there = ledgeDet1.collider != null ? ledgeDet1.point : (posPlusVel + Vector2.down * (jumpLedgeProbing+colliderSize.y));
+
+                context.input.jump = false;
+
+                float dy = there.y - here.y;
+                
+                //Run ledge detection if our target is higher than we are right now
+                if(jumpIfLedge && endPosition.y > data.pos.y) context.input.jump |= dy < -jumpLedgeThreshold;
+
+                //Run steep slope detection
+                if (jumpIfTooSteep && ledgeDet1.collider != null //Do we have a slope that can even be counted?
+                    && Mathf.Sign(ledgeDet1.normal.x) != Mathf.Sign(data.vel.x) //Are we moving against the slope?
+                    && Mathf.Abs(Vector2.Angle(-ledgeDet1.normal, Physics2D.gravity)) > context.owner.maxGroundAngle //Compare angles
+                ) context.input.jump = true;
+            }
+
+            //Tick time and calculate velocity
             data.time = context.time.active = context.time.stable += context.time.delta;
             data.vel = character.DoPhysicsUpdate(data.vel, context, IAction.PhysicsMode.SimulatePath);
 

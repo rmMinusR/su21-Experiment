@@ -1,17 +1,31 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class AttackAction : IAction
 {
     public override Vector2 AllowedSimulatedInterval => new Vector2(0, 5);
 
-    public override bool AllowEntry => throw new NotImplementedException();
+    private InputAction controlActivate;
+    private void Awake()
+    {
+        controlActivate = GetComponent<MovementController>().controlsMap.FindAction("Attack");
+        Debug.Assert(controlActivate != null);
+    }
 
-    [SerializeField] private string attackAnimName;
+    public override bool AllowEntry(in MovementController.Context context) => controlActivate.ReadValue<float>() > 0.5f;
+
+    [SerializeField] private AnimationClip attackAnim;
 
     public override void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode)
     {
-        if(mode == PhysicsMode.Live) context.owner.animator.Play(attackAnimName);
+        if (mode == PhysicsMode.Live)
+        {
+            //Play animation
+            context.owner.animator.Play(attackAnim.name);
+            //Scale to target length
+            context.owner.animator.speed = attackAnim.length / durationActive;
+        }
     }
 
     [SerializeField] private AnimationCurve impulseCurve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -30,10 +44,11 @@ public class AttackAction : IAction
         return velocity;
     }
 
-    public override bool AllowExit => throw new NotImplementedException();
+    public override bool AllowExit(in MovementController.Context context) => context.time.active >= durationActive;
 
     public override void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode)
     {
+        context.owner.animator.speed = 1;
         //TODO check not playing? or that exit conditions in animator are met?
     }
 }

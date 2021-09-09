@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 
 public sealed class MovementController : MonoBehaviour
 {
-    [NonSerialized] public InputActionMap controlsMap;
+    private InputActionMap __controlsMap; public InputActionMap controlsMap => __controlsMap != null ? __controlsMap : (__controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0]);
     [NonSerialized] public InputAction controlMovement;
     [NonSerialized] public InputAction controlJump;
 
@@ -16,9 +16,8 @@ public sealed class MovementController : MonoBehaviour
     void Awake()
     {
         //Capture controls
-        controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0];
-        controlMovement = controlsMap.Where(x => x.name == "Move").First(); Debug.Assert(controlMovement != null);
-        controlJump     = controlsMap.Where(x => x.name == "Jump").First(); Debug.Assert(controlJump     != null);
+        controlMovement = controlsMap.FindAction("Move"); Debug.Assert(controlMovement != null);
+        controlJump     = controlsMap.FindAction("Jump"); Debug.Assert(controlJump     != null);
         
         //Ensure we have base movement
         baseMovement = GetComponent<BaseMovementAction>();
@@ -185,9 +184,50 @@ public sealed class MovementController : MonoBehaviour
     {
         _DoGroundCheck();
 
+        if(!__bufChgFlagActiveMovement) _SearchForActionStateChanges();
+        _ProcessActionChangeBuffer();
+
         _UpdateContext();
 
         _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.PhysicsMode.Live);
+    }
+    
+    private void _SearchForActionStateChanges()
+    {
+        //TODO cleanup
+        //Check for exit flag from current action
+        if (activeMovement == null || activeMovement.AllowExit(in context))
+        {
+            //Default to base movement action if nothing else is found
+            activeMovement = null;
+
+            //Search for actions we can enter
+            foreach (IAction i in GetComponents<IAction>())
+            {
+                if (i.AllowEntry(in context))
+                {
+                    activeMovement = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void _ProcessActionChangeBuffer()
+    {
+        //Is there a change queued?
+        if(__bufChgFlagActiveMovement)
+        {
+            //Send entry/exit messages
+            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, __bufChgActiveMovement, IAction.PhysicsMode.Live);
+            if (__bufChgActiveMovement != null) __bufChgActiveMovement.DoSetup(ref context, __activeMovement, IAction.PhysicsMode.Live);
+
+            //Change value and reset active timer
+            __activeMovement = __bufChgActiveMovement;
+            context.time.active = 0;
+            
+            __bufChgFlagActiveMovement = false;
+        }
     }
 
     private void _UpdateContext()
@@ -223,21 +263,7 @@ public sealed class MovementController : MonoBehaviour
     }
 
     private IAction __activeMovement;
-    public IAction activeMovement
-    {
-        get => __activeMovement;
-        set
-        {
-            //Abort if no value would change
-            if (value == __activeMovement) return;
-
-            //Send entry/exit messages
-            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, value, IAction.PhysicsMode.Live);
-            if (value != null) value.DoSetup(ref context, __activeMovement, IAction.PhysicsMode.Live);
-
-            //Change value
-            __activeMovement = value;
-            context.time.active = 0;
-        }
-    }
+    private IAction __bufChgActiveMovement;
+    private bool __bufChgFlagActiveMovement = false;
+    public IAction activeMovement { get => __activeMovement; set { __bufChgActiveMovement = value; __bufChgFlagActiveMovement = true; } }
 }

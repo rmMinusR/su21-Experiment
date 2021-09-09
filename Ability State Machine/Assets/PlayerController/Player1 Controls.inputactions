@@ -15,7 +15,7 @@
                 },
                 {
                     "name": "Jump",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "720148d4-c18d-4367-b85f-90e5e998e7ee",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -25,6 +25,14 @@
                     "name": "Dash",
                     "type": "Button",
                     "id": "6666eafd-ef35-44ee-9bf8-23359323ae08",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": ""
+                },
+                {
+                    "name": "Attack",
+                    "type": "Button",
+                    "id": "a9231c9d-c5b4-44c9-9d3f-b254e37a20ba",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": ""
@@ -100,11 +108,22 @@
                 {
                     "name": "",
                     "id": "3bb56575-e79f-4050-b625-f164be6621ff",
-                    "path": "<Keyboard>/leftShift",
+                    "path": "<Keyboard>/p",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1ead9dee-2dbc-41d9-8649-345034e289da",
+                    "path": "<Keyboard>/u",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Attack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

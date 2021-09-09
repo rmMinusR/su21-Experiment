@@ -17,8 +17,8 @@ public abstract class IAction : MonoBehaviour
     public abstract Vector2 AllowedSimulatedInterval { get; }
 #endif
 
-    public abstract bool AllowEntry { get; }
-    public abstract bool AllowExit { get; }
+    public abstract bool AllowEntry(in MovementController.Context context);
+    public abstract bool AllowExit(in MovementController.Context context);
 
     /// <summary>
     /// Called when first taking effect. Do any setup code here. Not necessarily on the same frame as a call to DoPhysics.

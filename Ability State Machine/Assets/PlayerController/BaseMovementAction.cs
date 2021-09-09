@@ -6,8 +6,8 @@ public sealed class BaseMovementAction : IAction
 {
     public override Vector2 AllowedSimulatedInterval => new Vector2(0, 3);
 
-    public override bool AllowEntry => true;
-    public override bool AllowExit => true;
+    public override bool AllowEntry(in MovementController.Context context) => false; //Prevent accidentally entering as activeMovementAction
+    public override bool AllowExit(in MovementController.Context context) => true;
 
     //Params
     [Header("Movement controls")]

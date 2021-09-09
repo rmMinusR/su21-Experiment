@@ -16,10 +16,24 @@ public abstract class IAction : MonoBehaviour
 #if UNITY_EDITOR
     public abstract Vector2 AllowedSimulatedInterval { get; }
 #endif
+
     public abstract bool AllowEntry { get; }
     public abstract bool AllowExit { get; }
 
+    /// <summary>
+    /// Called when first taking effect. Do any setup code here. Not necessarily on the same frame as a call to DoPhysics.
+    /// </summary>
+    /// <param name="context">Host context</param>
+    /// <param name="prev">Previously-active action</param>
+    /// <param name="mode">Are we live, or simulating?</param>
     public abstract void DoSetup(MovementController.Context context, IAction prev, PhysicsMode mode);
+
+    /// <summary>
+    /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
+    /// </summary>
+    /// <param name="context">Host context</param>
+    /// <param name="prev">Previously-active action</param>
+    /// <param name="mode">Are we live, or simulating?</param>
     public abstract void DoCleanup(MovementController.Context context, IAction next, PhysicsMode mode);
     
     /// <summary>
@@ -33,10 +47,7 @@ public abstract class IAction : MonoBehaviour
     /// </summary>
     /// <param name="context">Host context</param>
     /// <param name="currentVelocity">Rigidbody's current velocity</param>
-    /// <param name="time">Time tracking for this state</param>
-    /// <param name="input">Global + surface-local input</param>
-    /// <param name="groundedness">0 = airborne, 1 = grounded</param>
-    /// <param name="isSimulated">Are we simulating acceleration curves?</param>
+    /// <param name="mode">Are we live, or simulating?</param>
     /// <returns>Rigidbody's new velocity</returns>
     public abstract Vector2 DoPhysics(MovementController.Context context, Vector2 currentVelocity, PhysicsMode mode);
 

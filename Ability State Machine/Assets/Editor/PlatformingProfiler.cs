@@ -223,8 +223,10 @@ public sealed class PlatformingProfiler : EditorWindow
                         float a = Physics2D.gravity.y;
 
                         //s = ut + 1/2 * at^2
-                        //t = (u + sqrt(u^2 + 8sa))/4sa
-                        float t = (v + Mathf.Sqrt(v*v + 8*s*a))/(4*s*a);
+                        //t = (-u + sqrt(2sa+u^2))/a
+                        float t = -(v + Mathf.Sqrt(2*s*a+v*v))/a;
+
+                        Debug.Log("s="+s+" v="+v+" a="+a+" t="+t);
 
                         Handles.color = Color.cyan;
                         Handles.DrawDottedLine(path[i].pos, thisFrame.point, 2);

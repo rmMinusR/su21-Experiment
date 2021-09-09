@@ -49,9 +49,9 @@ public abstract class IActionEditor<TAction> : Editor
                 local  = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
                 jump = false
             },
-            () => obj.DoSetup(context, null, IAction.PhysicsMode.SimulateCurves),
+            () => obj.DoSetup(ref context, null, IAction.PhysicsMode.SimulateCurves),
             f,
-            () => obj.DoCleanup(context, null, IAction.PhysicsMode.SimulateCurves),
+            () => obj.DoCleanup(ref context, null, IAction.PhysicsMode.SimulateCurves),
             v => v.x
         );
     }

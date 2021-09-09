@@ -514,6 +514,7 @@ GameObject:
   - component: {fileID: 607304552}
   - component: {fileID: 607304554}
   - component: {fileID: 607304550}
+  - component: {fileID: 607304551}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -533,13 +534,74 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63e43c745b731ba48a96063449238d50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentFacing: 0
   moveSpeed: 5
   staticFrictionSnap: 0.3
   groundControl: 0.9875
   airControl: 0.9
   wallJumpAngle: 0.5
   jumpForce: 8
+--- !u!114 &607304551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 607304549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackAnimName: attack1
+  impulseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  dampingCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  durationActive: 5
 --- !u!114 &607304552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -598,6 +660,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e35cf9afb0e22e74190efe43343fda83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  animator: {fileID: 267139489}
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
   _localMotionFalloff: 0.1

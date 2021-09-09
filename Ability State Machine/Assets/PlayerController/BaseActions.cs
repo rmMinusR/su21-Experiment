@@ -26,15 +26,7 @@ public abstract class IAction : MonoBehaviour
     /// <param name="context">Host context</param>
     /// <param name="prev">Previously-active action</param>
     /// <param name="mode">Are we live, or simulating?</param>
-    public abstract void DoSetup(MovementController.Context context, IAction prev, PhysicsMode mode);
-
-    /// <summary>
-    /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
-    /// </summary>
-    /// <param name="context">Host context</param>
-    /// <param name="prev">Previously-active action</param>
-    /// <param name="mode">Are we live, or simulating?</param>
-    public abstract void DoCleanup(MovementController.Context context, IAction next, PhysicsMode mode);
+    public abstract void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode);
     
     /// <summary>
     /// While active, called as part of every physics update frame to run this
@@ -49,19 +41,21 @@ public abstract class IAction : MonoBehaviour
     /// <param name="currentVelocity">Rigidbody's current velocity</param>
     /// <param name="mode">Are we live, or simulating?</param>
     /// <returns>Rigidbody's new velocity</returns>
-    public abstract Vector2 DoPhysics(MovementController.Context context, Vector2 currentVelocity, PhysicsMode mode);
+    public abstract Vector2 DoPhysics(ref MovementController.Context context, Vector2 currentVelocity, PhysicsMode mode);
 
     /// <summary>
-    /// Negative = local-left aka CCW, positive = local-right aka CW.
-    /// Only used by animation driver code.
+    /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
     /// </summary>
-    public Facing currentFacing;
+    /// <param name="context">Host context</param>
+    /// <param name="prev">Previously-active action</param>
+    /// <param name="mode">Are we live, or simulating?</param>
+    public abstract void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode);
 }
 
 public enum Facing
 {
     Left = -1,
-    DontCare = 0,
+    Agnostic = 0,
     Right = 1
 }
 
@@ -71,7 +65,7 @@ public static class FacingExt
     {
              if (input < -threshold) return Facing.Left;
         else if (input >  threshold) return Facing.Right;
-        else                         return Facing.DontCare;
+        else                         return Facing.Agnostic;
     }
 }
 

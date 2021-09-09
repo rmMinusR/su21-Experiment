@@ -20,19 +20,23 @@ public sealed class MovementController : MonoBehaviour
         controlMovement = controlsMap.Where(x => x.name == "Move").First(); Debug.Assert(controlMovement != null);
         controlJump     = controlsMap.Where(x => x.name == "Jump").First(); Debug.Assert(controlJump     != null);
         
-        _rb = GetComponent<Rigidbody2D>();
-
-        context.owner = this;
-
         //Ensure we have base movement
         baseMovement = GetComponent<BaseMovementAction>();
         Debug.Assert(baseMovement != null);
+
+        context.owner = this;
+
+        _rb = GetComponent<Rigidbody2D>();
+
+        Debug.Assert(animator != null);
     }
 
-    #region Memoized component references
+    #region Component references
 
     private Rigidbody2D _rb;
-    
+
+    public Animator animator;
+
     public BaseMovementAction baseMovement { get; private set; }
 
     #endregion
@@ -183,7 +187,7 @@ public sealed class MovementController : MonoBehaviour
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, context, IAction.PhysicsMode.Live);
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.PhysicsMode.Live);
     }
 
     private void _UpdateContext()
@@ -198,7 +202,7 @@ public sealed class MovementController : MonoBehaviour
         context.currentAction = activeMovement != null ? activeMovement : baseMovement;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, Context context, IAction.PhysicsMode mode)
+    public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.PhysicsMode mode)
     {
         //Update local up axis
         context.surfaceUp = Vector3.Slerp(
@@ -215,7 +219,7 @@ public sealed class MovementController : MonoBehaviour
         }
 
         //Execute currently-active movement action
-        return context.currentAction.DoPhysics(context, velocity, mode);
+        return context.currentAction.DoPhysics(ref context, velocity, mode);
     }
 
     private IAction __activeMovement;
@@ -228,8 +232,8 @@ public sealed class MovementController : MonoBehaviour
             if (value == __activeMovement) return;
 
             //Send entry/exit messages
-            if (__activeMovement != null) __activeMovement.DoCleanup(context, value, IAction.PhysicsMode.Live);
-            if (value != null) value.DoSetup(context, __activeMovement, IAction.PhysicsMode.Live);
+            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, value, IAction.PhysicsMode.Live);
+            if (value != null) value.DoSetup(ref context, __activeMovement, IAction.PhysicsMode.Live);
 
             //Change value
             __activeMovement = value;

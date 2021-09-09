@@ -26,10 +26,10 @@ public sealed class BaseMovementAction : IAction
     [SerializeField] [Min(0)]      private float jumpForce;
 
 
-    public override void DoSetup(MovementController.Context context, IAction prev, PhysicsMode mode) { }
-    public override void DoCleanup(MovementController.Context context, IAction next, PhysicsMode mode) { }
+    public override void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode) { }
+    public override void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode) { }
 
-    public override Vector2 DoPhysics(MovementController.Context context, Vector2 velocity, PhysicsMode mode)
+    public override Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, PhysicsMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
@@ -71,6 +71,9 @@ public sealed class BaseMovementAction : IAction
         }
 
         if (mode == PhysicsMode.Live) velocity = _ProcessFakeFriction(velocity);
+
+        //Write facing for AnimationDriver
+        if (mode == PhysicsMode.Live) context.facing = FacingExt.Detect(context.input.global.x, 0.05f);
 
         return velocity;
     }

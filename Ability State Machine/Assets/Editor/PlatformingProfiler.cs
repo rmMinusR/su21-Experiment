@@ -226,8 +226,6 @@ public sealed class PlatformingProfiler : EditorWindow
                         //t = (-u + sqrt(2sa+u^2))/a
                         float t = -(v + Mathf.Sqrt(2*s*a+v*v))/a;
 
-                        Debug.Log("s="+s+" v="+v+" a="+a+" t="+t);
-
                         Handles.color = Color.cyan;
                         Handles.DrawDottedLine(path[i].pos, thisFrame.point, 2);
                         Handles.Label(thisFrame.point, (t*1000).ToString("n0")+"ms to react");
@@ -261,7 +259,7 @@ public sealed class PlatformingProfiler : EditorWindow
         CastFunc cast = GetCastFunc(character.gameObject);
         Vector2 colliderSize = GetColliderSize(character.gameObject);
 
-        context.currentAction.DoSetup(context, null, IAction.PhysicsMode.SimulatePath);
+        context.currentAction.DoSetup(ref context, null, IAction.PhysicsMode.SimulatePath);
         
         output.Add(data);
 
@@ -305,7 +303,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Tick time and calculate velocity
             data.time = context.time.active = context.time.stable += context.time.delta;
-            data.vel = character.DoPhysicsUpdate(data.vel, context, IAction.PhysicsMode.SimulatePath);
+            data.vel = character.DoPhysicsUpdate(data.vel, ref context, IAction.PhysicsMode.SimulatePath);
 
             //Check to see if we would hit anything while moving
             float timeThisFrame = timeResolution;
@@ -337,7 +335,7 @@ public sealed class PlatformingProfiler : EditorWindow
         //Until we reach our destination, or run out of simulation time
         while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
-        context.currentAction.DoCleanup(context, null, IAction.PhysicsMode.SimulatePath);
+        context.currentAction.DoCleanup(ref context, null, IAction.PhysicsMode.SimulatePath);
 
         return output;
     }

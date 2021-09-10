@@ -85,7 +85,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
     private float snapInputThreshold = 0.05f;
 
-    private float jumpLedgeProbing = 2f;
+    private float jumpLedgeProbing = 5f;
     private float jumpLedgeThreshold = 1f;
     private bool jumpIfLedge = true;
     private bool jumpIfTooSteep = false;
@@ -127,7 +127,7 @@ public sealed class PlatformingProfiler : EditorWindow
             if (jumpIfLedge != tmp) { jumpIfLedge = tmp; markRepaint = true; }
         }
         if(jumpIfLedge) {
-            float tmp = EditorGUILayout.Slider("Ledge probe (m)", jumpLedgeProbing, 1, 10);
+            float tmp = EditorGUILayout.Slider("Ledge probe (m)", jumpLedgeProbing, 5, 50);
             if (jumpLedgeProbing != tmp) { jumpLedgeProbing = tmp; markRepaint = true; }
             tmp = EditorGUILayout.Slider("Ledge drop threshold (m)", jumpLedgeThreshold, 1, 10);
             if (jumpLedgeThreshold != tmp) { jumpLedgeThreshold = tmp; markRepaint = true; }
@@ -212,9 +212,9 @@ public sealed class PlatformingProfiler : EditorWindow
                 if(!path[i].grounded)// && Vector2.Dot(path[i].vel, Physics2D.gravity) > 0)
                 {
                     RaycastHit2D thisFrame = Physics2D.Raycast(path[i].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
-                    
+
                     if (lastFrame != null && thisFrame.collider != null //Detect when a collider first enters our raycast
-                    && (lastFrame.Value.collider == null || thisFrame.distance-lastFrame.Value.distance > jumpLedgeThreshold)) //And when it's counted as a ledge
+                    && (lastFrame.Value.collider == null || Mathf.Abs(thisFrame.distance-lastFrame.Value.distance) > jumpLedgeThreshold)) //And when it's counted as a ledge
                     {
                         //Calculate time to impact
                         //Uses Y only but X would prob work too

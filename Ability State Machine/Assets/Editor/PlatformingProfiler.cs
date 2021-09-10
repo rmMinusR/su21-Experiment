@@ -26,7 +26,7 @@ public sealed class PlatformingProfiler : EditorWindow
     {
         foreach (Collider2D coll in obj.GetComponents<Collider2D>())
         {
-            if (coll is CapsuleCollider2D cc) return (pos, dir) => Physics2D.CapsuleCast(pos+cc.offset, cc.size, cc.direction, 0, dir.normalized, dir.magnitude);
+            if (coll is CapsuleCollider2D cc) return (pos, dir) => Physics2D.CapsuleCast(pos+cc.offset, cc.size*cc.transform.localScale, cc.direction, 0, dir.normalized, dir.magnitude);
             else Debug.LogWarning("Unsupported collider: " + coll.GetType().Name);
         }
 
@@ -37,7 +37,7 @@ public sealed class PlatformingProfiler : EditorWindow
     {
         foreach (Collider2D coll in obj.GetComponents<Collider2D>())
         {
-            if (coll is CapsuleCollider2D cc) return cc.size * cc.transform.localScale;
+            if (coll is CapsuleCollider2D cc) return cc.size*cc.transform.localScale;
             else Debug.LogWarning("Unsupported collider: " + coll.GetType().Name);
         }
 

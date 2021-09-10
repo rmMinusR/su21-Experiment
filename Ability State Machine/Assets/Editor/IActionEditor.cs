@@ -5,7 +5,7 @@ using System;
 
 //[CustomEditor(typeof(TFactory))]
 public abstract class IActionEditor<TAction> : Editor
-                    where TAction : IAction
+                    where TAction : UnityEngine.Object, IAction
 {
     public float simulatedDeltaTime = 0.05f;
     public float simulatedInterval = 3;
@@ -49,9 +49,9 @@ public abstract class IActionEditor<TAction> : Editor
                 local  = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
                 jump = false
             },
-            () => obj.DoSetup(ref context, null, IAction.PhysicsMode.SimulateCurves),
+            () => obj.DoSetup(ref context, null, IAction.ExecMode.SimulateCurves),
             f,
-            () => obj.DoCleanup(ref context, null, IAction.PhysicsMode.SimulateCurves),
+            () => obj.DoCleanup(ref context, null, IAction.ExecMode.SimulateCurves),
             v => v.x
         );
     }

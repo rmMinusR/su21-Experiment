@@ -259,7 +259,7 @@ public sealed class PlatformingProfiler : EditorWindow
         CastFunc cast = GetCastFunc(character.gameObject);
         Vector2 colliderSize = GetColliderSize(character.gameObject);
 
-        context.currentAction.DoSetup(ref context, null, IAction.PhysicsMode.SimulatePath);
+        context.currentAction.DoSetup(ref context, null, IAction.ExecMode.SimulatePath);
         
         output.Add(data);
 
@@ -303,7 +303,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Tick time and calculate velocity
             data.time = context.time.active = context.time.stable += context.time.delta;
-            data.vel = character.DoPhysicsUpdate(data.vel, ref context, IAction.PhysicsMode.SimulatePath);
+            data.vel = character.DoPhysicsUpdate(data.vel, ref context, IAction.ExecMode.SimulatePath);
 
             //Check to see if we would hit anything while moving
             float timeThisFrame = timeResolution;
@@ -335,7 +335,7 @@ public sealed class PlatformingProfiler : EditorWindow
         //Until we reach our destination, or run out of simulation time
         while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
-        context.currentAction.DoCleanup(ref context, null, IAction.PhysicsMode.SimulatePath);
+        context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
 
         return output;
     }

@@ -189,7 +189,7 @@ public sealed class MovementController : MonoBehaviour
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.PhysicsMode.Live);
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.ExecMode.Live);
     }
     
     private void _SearchForActionStateChanges()
@@ -219,8 +219,8 @@ public sealed class MovementController : MonoBehaviour
         if(__bufChgFlagActiveMovement)
         {
             //Send entry/exit messages
-            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, __bufChgActiveMovement, IAction.PhysicsMode.Live);
-            if (__bufChgActiveMovement != null) __bufChgActiveMovement.DoSetup(ref context, __activeMovement, IAction.PhysicsMode.Live);
+            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, __bufChgActiveMovement, IAction.ExecMode.Live);
+            if (__bufChgActiveMovement != null) __bufChgActiveMovement.DoSetup(ref context, __activeMovement, IAction.ExecMode.Live);
 
             //Change value and reset active timer
             __activeMovement = __bufChgActiveMovement;
@@ -242,7 +242,7 @@ public sealed class MovementController : MonoBehaviour
         context.currentAction = activeMovement != null ? activeMovement : baseMovement;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.PhysicsMode mode)
+    public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
     {
         //Update local up axis
         context.surfaceUp = Vector3.Slerp(
@@ -251,7 +251,7 @@ public sealed class MovementController : MonoBehaviour
                 1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
             ).normalized;
 
-        if(mode == IAction.PhysicsMode.Live)
+        if(mode == IAction.ExecMode.Live)
         {
             //Show debug surface lines
             Debug.DrawLine(transform.position, transform.position + (Vector3)context.surfaceRight, Color.red  , 0.2f);

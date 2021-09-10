@@ -4,21 +4,22 @@ using UnityEngine;
 /// <summary>
 /// Scripts that take control of movement should implement this for mutual exclusion safety with Rigidbody.
 /// </summary>
-public abstract class IAction : MonoBehaviour
+public interface IAction
 {
-    public enum PhysicsMode
+    public enum ExecMode
     {
         Live,
+        LiveDelegated, //TODO IMPLEMENT
         SimulatePath,
         SimulateCurves
     }
 
 #if UNITY_EDITOR
-    public abstract Vector2 AllowedSimulatedInterval { get; }
+    public Vector2 AllowedSimulatedInterval { get; }
 #endif
 
-    public abstract bool AllowEntry(in MovementController.Context context);
-    public abstract bool AllowExit(in MovementController.Context context);
+    public bool AllowEntry(in MovementController.Context context);
+    public bool AllowExit(in MovementController.Context context);
 
     /// <summary>
     /// Called when first taking effect. Do any setup code here. Not necessarily on the same frame as a call to DoPhysics.
@@ -26,7 +27,7 @@ public abstract class IAction : MonoBehaviour
     /// <param name="context">Host context</param>
     /// <param name="prev">Previously-active action</param>
     /// <param name="mode">Are we live, or simulating?</param>
-    public abstract void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode);
+    public void DoSetup(ref MovementController.Context context, IAction prev, ExecMode mode);
     
     /// <summary>
     /// While active, called as part of every physics update frame to run this
@@ -41,7 +42,7 @@ public abstract class IAction : MonoBehaviour
     /// <param name="currentVelocity">Rigidbody's current velocity</param>
     /// <param name="mode">Are we live, or simulating?</param>
     /// <returns>Rigidbody's new velocity</returns>
-    public abstract Vector2 DoPhysics(ref MovementController.Context context, Vector2 currentVelocity, PhysicsMode mode);
+    public Vector2 DoPhysics(ref MovementController.Context context, Vector2 currentVelocity, ExecMode mode);
 
     /// <summary>
     /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
@@ -49,7 +50,7 @@ public abstract class IAction : MonoBehaviour
     /// <param name="context">Host context</param>
     /// <param name="prev">Previously-active action</param>
     /// <param name="mode">Are we live, or simulating?</param>
-    public abstract void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode);
+    public void DoCleanup(ref MovementController.Context context, IAction next, ExecMode mode);
 }
 
 public enum Facing

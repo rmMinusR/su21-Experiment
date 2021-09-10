@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class BaseMovementAction : IAction
+public sealed class BaseMovementAction : MonoBehaviour, IAction
 {
-    public override Vector2 AllowedSimulatedInterval => new Vector2(0, 3);
+    public Vector2 AllowedSimulatedInterval => new Vector2(0, 3);
 
-    public override bool AllowEntry(in MovementController.Context context) => false; //Prevent accidentally entering as activeMovementAction
-    public override bool AllowExit(in MovementController.Context context) => true;
+    public bool AllowEntry(in MovementController.Context context) => false; //Prevent accidentally entering as activeMovementAction
+    public bool AllowExit(in MovementController.Context context) => true;
 
     //Params
     [Header("Movement controls")]
@@ -26,22 +26,22 @@ public sealed class BaseMovementAction : IAction
     [SerializeField] [Min(0)]      private float jumpForce;
 
 
-    public override void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode) { }
-    public override void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode) { }
+    public void DoSetup(ref MovementController.Context context, IAction prev, IAction.ExecMode mode) { }
+    public void DoCleanup(ref MovementController.Context context, IAction next, IAction.ExecMode mode) { }
 
-    public override Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, PhysicsMode mode)
+    public Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, IAction.ExecMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
 
         //Get user input
         float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
-        if(mode == PhysicsMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
+        if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != PhysicsMode.SimulateCurves) velocity += _DoSurfaceSticking(context);
+        if(mode != IAction.ExecMode.SimulateCurves) velocity += _DoSurfaceSticking(context);
 
         //Velocity to local space
-        Vector2 localVelocity = (mode==PhysicsMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = (mode==IAction.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
@@ -58,7 +58,7 @@ public sealed class BaseMovementAction : IAction
         }
 
         //Transform back to global space
-        velocity = (mode==PhysicsMode.SimulateCurves) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = (mode==IAction.ExecMode.SimulateCurves) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
@@ -70,10 +70,10 @@ public sealed class BaseMovementAction : IAction
             context.MarkUngrounded();
         }
 
-        if (mode == PhysicsMode.Live) velocity = _ProcessFakeFriction(velocity);
+        if (mode == IAction.ExecMode.Live) velocity = _ProcessFakeFriction(velocity);
 
         //Write facing for AnimationDriver
-        if (mode == PhysicsMode.Live) context.facing = FacingExt.Detect(context.input.global.x, 0.05f);
+        if (mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(context.input.global.x, 0.05f);
 
         return velocity;
     }

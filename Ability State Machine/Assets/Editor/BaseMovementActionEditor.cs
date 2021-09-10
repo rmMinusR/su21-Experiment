@@ -11,14 +11,14 @@ public class BaseMovementActionEditor : IActionEditor<BaseMovementAction>
         RenderGraph("Grounded", base.simulatedInterval, base.simulatedDeltaTime, host, obj,
             (c, v) => {
                 c.MarkGrounded();
-                return obj.DoPhysics(ref c, v, IAction.PhysicsMode.SimulateCurves);
+                return obj.DoPhysics(ref c, v, IAction.ExecMode.SimulateCurves);
             }
         );
 
         RenderGraph("Airborne", base.simulatedInterval, base.simulatedDeltaTime, host, obj,
             (c, v) => {
                 c.MarkUngrounded();
-                return obj.DoPhysics(ref c, v, IAction.PhysicsMode.SimulateCurves);
+                return obj.DoPhysics(ref c, v, IAction.ExecMode.SimulateCurves);
             }
         );
     }

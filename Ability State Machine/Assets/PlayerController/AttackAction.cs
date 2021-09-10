@@ -2,9 +2,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class AttackAction : IAction
+public class AttackAction : MonoBehaviour, IAction
 {
-    public override Vector2 AllowedSimulatedInterval => new Vector2(0, 5);
+    public Vector2 AllowedSimulatedInterval => new Vector2(0, 5);
 
     private InputAction controlActivate;
     private void Awake()
@@ -13,7 +13,6 @@ public class AttackAction : IAction
         Debug.Assert(controlActivate != null);
     }
 
-    public override bool AllowEntry(in MovementController.Context context) => controlActivate.ReadValue<float>() > 0.5f;
 
     [SerializeField] private AnimationClip[] attackAnims;
 
@@ -23,10 +22,12 @@ public class AttackAction : IAction
         activeUntil = context.time.active + attackAnims[ind].length;
     }
 
-    public override void DoSetup(ref MovementController.Context context, IAction prev, PhysicsMode mode)
+    public bool AllowEntry(in MovementController.Context context) => controlActivate.ReadValue<float>() > 0.5f;
+
+    public void DoSetup(ref MovementController.Context context, IAction prev, IAction.ExecMode mode)
     {
         //Play animation
-        if (mode == PhysicsMode.Live)
+        if (mode == IAction.ExecMode.Live)
         {
             swingCounter = 0;
             acceptingContinueInput = false;
@@ -44,30 +45,29 @@ public class AttackAction : IAction
     [SerializeField] private float activeUntil = 0;
     [SerializeField] private int swingCounter = 0;
 
-    public override Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, PhysicsMode mode)
+    private void TryStartNextSwing(MovementController.Context context)
+    {
+        if(acceptingContinueInput)
+        {
+            swingCounter = (swingCounter + 1) % attackAnims.Length;
+            _Play(context, swingCounter);
+            acceptingContinueInput = false;
+        }
+    }
+
+    public Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, IAction.ExecMode mode)
     {
         Vector2 diff = velocityOverride - velocity;
         velocity += diff * Mathf.Pow(overrideSmoothing, Time.deltaTime);
 
-        if(mode == PhysicsMode.Live)
-        {
-            //Check if we're allowed to start the next cycle, and if the input says so
-            if (acceptingContinueInput && controlActivate.ReadValue<float>() > 0.5f)
-            {
-                swingCounter = (swingCounter+1) % attackAnims.Length;
-                _Play(context, swingCounter);
-                acceptingContinueInput = false;
-            }
-        }
-
         return velocity;
     }
 
-    public override bool AllowExit(in MovementController.Context context) => context.time.active >= activeUntil;
+    public bool AllowExit(in MovementController.Context context) => context.time.active >= activeUntil;
 
-    public override void DoCleanup(ref MovementController.Context context, IAction next, PhysicsMode mode)
+    public void DoCleanup(ref MovementController.Context context, IAction next, IAction.ExecMode mode)
     {
-        if (mode == PhysicsMode.Live) context.owner.animator.speed = 1;
+        if (mode == IAction.ExecMode.Live) context.owner.animator.speed = 1;
         //TODO check not playing? or that exit conditions in animator are met?
     }
 }

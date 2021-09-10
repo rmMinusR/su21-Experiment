@@ -37,7 +37,7 @@ public sealed class PlatformingProfiler : EditorWindow
     {
         foreach (Collider2D coll in obj.GetComponents<Collider2D>())
         {
-            if (coll is CapsuleCollider2D cc) return cc.size;
+            if (coll is CapsuleCollider2D cc) return cc.size * cc.transform.localScale;
             else Debug.LogWarning("Unsupported collider: " + coll.GetType().Name);
         }
 

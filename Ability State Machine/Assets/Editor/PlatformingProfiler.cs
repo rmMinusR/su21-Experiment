@@ -53,7 +53,7 @@ public sealed class PlatformingProfiler : EditorWindow
         //If we don't have a MovementController captured, try to do so on changing selection
         if(Selection.activeGameObject != null)
         {
-            MovementController m = Selection.activeGameObject.GetComponent<MovementController>();
+            PlayerHost m = Selection.activeGameObject.GetComponent<PlayerHost>();
             if (character == null && m != null) character = m;
         }
     }
@@ -77,7 +77,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
     #region Editable members
 
-    private MovementController character = null;
+    private PlayerHost character = null;
 
     private Vector2 startPosition = Vector2.left;
     private Vector2 endPosition   = Vector2.right;
@@ -103,7 +103,7 @@ public sealed class PlatformingProfiler : EditorWindow
     {
         bool markRepaint = false;
 
-        character = (MovementController) EditorGUILayout.ObjectField("Agent", character, typeof(MovementController), true);
+        character = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Input settings", EditorStyles.boldLabel);
@@ -190,7 +190,7 @@ public sealed class PlatformingProfiler : EditorWindow
         if (character != null)
         {
             //Setup
-            MovementController.Context c = new MovementController.Context(character);
+            PlayerHost.Context c = new PlayerHost.Context(character);
             c.currentAction = character.GetComponent<BaseMovementAction>();
             c.time.delta = timeResolution;
 
@@ -246,7 +246,7 @@ public sealed class PlatformingProfiler : EditorWindow
         public bool grounded;
     }
 
-    private List<SimulatedPathData> SimulatePath(MovementController.Context context)
+    private List<SimulatedPathData> SimulatePath(PlayerHost.Context context)
     {
         List<SimulatedPathData> output = new List<SimulatedPathData>();
 

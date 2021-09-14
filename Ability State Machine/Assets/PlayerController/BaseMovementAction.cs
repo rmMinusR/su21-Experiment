@@ -6,8 +6,8 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
 {
     public Vector2 AllowedSimulatedInterval => new Vector2(0, 3);
 
-    public bool AllowEntry(in MovementController.Context context) => false; //Prevent accidentally entering as activeMovementAction
-    public bool AllowExit(in MovementController.Context context) => true;
+    public bool AllowEntry(in PlayerHost.Context context) => false; //Prevent accidentally entering as activeMovementAction
+    public bool AllowExit(in PlayerHost.Context context) => true;
 
     //Params
     [Header("Movement controls")]
@@ -25,20 +25,42 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
     [SerializeField] [Range(0, 1)] private float wallJumpAngle = 0.5f;
     [SerializeField] [Min(0)]      private float jumpForce;
 
+    [Header("Animations")]
+    [SerializeField] private AnimationClip[] anims;
 
-    public void DoSetup(ref MovementController.Context context, IAction prev, IAction.ExecMode mode) { }
-    public void DoCleanup(ref MovementController.Context context, IAction next, IAction.ExecMode mode) { }
+    public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode) { }
+    public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode) { }
 
-    public Vector2 DoPhysics(ref MovementController.Context context, Vector2 velocity, IAction.ExecMode mode)
+    public void _ApplyGravity(PlayerHost.Context context, ref Vector2 velocity)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
+    }
+
+    public void _ApplyStaticFriction(PlayerHost.Context context, ref Vector2 velocity, float input)
+    {
+        //Snappiness thresholding
+        if(context.GroundRatio > 0.05f) {
+            if(Mathf.Abs(input) > 0.01f) {
+                //Boost
+                if (Mathf.Abs(velocity.x) < _adjustedCutoffSnappiness && Mathf.Sign(velocity.x) == Mathf.Sign(input)) velocity.x = _adjustedCutoffSnappiness * Mathf.Sign(velocity.x);
+            } else {
+                //Cutoff
+                if (Mathf.Abs(velocity.x) < _adjustedCutoffSnappiness) velocity.x = 0;
+            }
+        }
+    }
+
+    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
+    {
+        _ApplyGravity(context, ref velocity);
 
         //Get user input
+        //TODO switch to context.input.local?
         float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
         if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != IAction.ExecMode.SimulateCurves) velocity += _DoSurfaceSticking(context);
+        if(mode != IAction.ExecMode.SimulateCurves) velocity += _ApplySurfaceSticking(context);
 
         //Velocity to local space
         Vector2 localVelocity = (mode==IAction.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
@@ -46,19 +68,10 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
 
-        //Snappiness thresholding
-        if(context.GroundRatio > 0.05f) {
-            if(Mathf.Abs(localInput) > 0.01f) {
-                //Boost
-                if (Mathf.Abs(localVelocity.x) < _adjustedCutoffSnappiness && Mathf.Sign(localVelocity.x) == Mathf.Sign(localInput)) localVelocity.x = _adjustedCutoffSnappiness * Mathf.Sign(localVelocity.x);
-            } else {
-                //Cutoff
-                if (Mathf.Abs(localVelocity.x) < _adjustedCutoffSnappiness) localVelocity.x = 0;
-            }
-        }
+        if(mode != IAction.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
 
         //Transform back to global space
-        velocity = (mode==IAction.ExecMode.SimulateCurves) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = (mode<=IAction.ExecMode.LiveDelegated) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
@@ -70,15 +83,20 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
             context.MarkUngrounded();
         }
 
-        if (mode == IAction.ExecMode.Live) velocity = _ProcessFakeFriction(velocity);
+        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
 
-        //Write facing for AnimationDriver
-        if (mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(context.input.global.x, 0.05f);
+        //Write for AnimationDriver
+        if (mode == IAction.ExecMode.Live)
+        {
+            float vx = velocity.x/moveSpeed;
+            context.facing = FacingExt.Detect(vx, 0.05f);
+            context.owner.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
+        }
 
         return velocity;
     }
 
-    Vector2 _DoSurfaceSticking(MovementController.Context context)
+    public Vector2 _ApplySurfaceSticking(PlayerHost.Context context)
     {
         if (context.lastKnownFlattest.HasValue)
         {

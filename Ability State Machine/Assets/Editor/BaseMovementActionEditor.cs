@@ -6,7 +6,7 @@ public class BaseMovementActionEditor : IActionEditor<BaseMovementAction>
 {
     protected override void RenderAllGraphs(BaseMovementAction obj)
     {
-        MovementController host = obj.GetComponent<MovementController>();
+        PlayerHost host = obj.GetComponent<PlayerHost>();
 
         RenderGraph("Grounded", base.simulatedInterval, base.simulatedDeltaTime, host, obj,
             (c, v) => {

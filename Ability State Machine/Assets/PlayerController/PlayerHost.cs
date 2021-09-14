@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public sealed class MovementController : MonoBehaviour
+public sealed class PlayerHost : MonoBehaviour
 {
     private InputActionMap __controlsMap; public InputActionMap controlsMap => __controlsMap != null ? __controlsMap : (__controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0]);
     [NonSerialized] public InputAction controlMovement;
@@ -27,14 +27,17 @@ public sealed class MovementController : MonoBehaviour
 
         _rb = GetComponent<Rigidbody2D>();
 
-        Debug.Assert(animator != null);
+        Debug.Assert(anim != null);
+        Debug.Assert(ui != null);
     }
 
     #region Component references
 
     private Rigidbody2D _rb;
 
-    public Animator animator;
+    public PlayerAnimationDriver anim;
+
+    public PlayerUIDriver ui;
 
     public BaseMovementAction baseMovement { get; private set; }
 
@@ -43,9 +46,9 @@ public sealed class MovementController : MonoBehaviour
     [Serializable]
     public struct Context
     {
-        public MovementController owner;
+        public PlayerHost owner;
 
-        public Context(MovementController owner)
+        public Context(PlayerHost owner)
         {
             this.owner = owner;
             
@@ -82,7 +85,7 @@ public sealed class MovementController : MonoBehaviour
         public InputParam input;
         public TimeParam time;
         public Facing facing;
-        [SerializeReference] public IAction currentAction;
+        public IAction currentAction; //TODO how to serialize?
     }
 
     #region Ground/ceiling checking

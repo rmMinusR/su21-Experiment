@@ -18,8 +18,8 @@ public interface IAction
     public Vector2 AllowedSimulatedInterval { get; }
 #endif
 
-    public bool AllowEntry(in MovementController.Context context);
-    public bool AllowExit(in MovementController.Context context);
+    public bool AllowEntry(in PlayerHost.Context context);
+    public bool AllowExit(in PlayerHost.Context context);
 
     /// <summary>
     /// Called when first taking effect. Do any setup code here. Not necessarily on the same frame as a call to DoPhysics.
@@ -27,7 +27,7 @@ public interface IAction
     /// <param name="context">Host context</param>
     /// <param name="prev">Previously-active action</param>
     /// <param name="mode">Are we live, or simulating?</param>
-    public void DoSetup(ref MovementController.Context context, IAction prev, ExecMode mode);
+    public void DoSetup(ref PlayerHost.Context context, IAction prev, ExecMode mode);
     
     /// <summary>
     /// While active, called as part of every physics update frame to run this
@@ -42,7 +42,7 @@ public interface IAction
     /// <param name="currentVelocity">Rigidbody's current velocity</param>
     /// <param name="mode">Are we live, or simulating?</param>
     /// <returns>Rigidbody's new velocity</returns>
-    public Vector2 DoPhysics(ref MovementController.Context context, Vector2 currentVelocity, ExecMode mode);
+    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 currentVelocity, ExecMode mode);
 
     /// <summary>
     /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
@@ -50,7 +50,7 @@ public interface IAction
     /// <param name="context">Host context</param>
     /// <param name="prev">Previously-active action</param>
     /// <param name="mode">Are we live, or simulating?</param>
-    public void DoCleanup(ref MovementController.Context context, IAction next, ExecMode mode);
+    public void DoCleanup(ref PlayerHost.Context context, IAction next, ExecMode mode);
 }
 
 public enum Facing

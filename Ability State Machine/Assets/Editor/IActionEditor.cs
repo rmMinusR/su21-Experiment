@@ -33,14 +33,14 @@ public abstract class IActionEditor<TAction> : Editor
     protected abstract void RenderAllGraphs(TAction obj);
 
     protected delegate InputParam InputSimulatorFunc(float time);
-    protected delegate Vector2 VelocitySimulatorFunc(MovementController.Context context, Vector2 velocity);
+    protected delegate Vector2 VelocitySimulatorFunc(PlayerHost.Context context, Vector2 velocity);
     protected delegate float VelocityLinearizerFunc(Vector2 velocity);
 
     //Basic version with defaults for shortcuts and simple tests
     protected static void RenderGraph(string graphName, float simulatedInterval, float timestep,
-        MovementController host, TAction obj, VelocitySimulatorFunc f)
+        PlayerHost host, TAction obj, VelocitySimulatorFunc f)
     {
-        MovementController.Context context = new MovementController.Context(host);
+        PlayerHost.Context context = new PlayerHost.Context(host);
         context.time.delta = timestep;
 
         RenderGraph(graphName, context, simulatedInterval, timestep,
@@ -57,7 +57,7 @@ public abstract class IActionEditor<TAction> : Editor
     }
 
     //Explicit version for specific tests
-    protected static void RenderGraph(string graphName, MovementController.Context context, float simulatedInterval, float timestep,
+    protected static void RenderGraph(string graphName, PlayerHost.Context context, float simulatedInterval, float timestep,
         InputSimulatorFunc input, Action enter, VelocitySimulatorFunc f, Action exit, VelocityLinearizerFunc lin)
     {
         List<Keyframe> data = new List<Keyframe>();

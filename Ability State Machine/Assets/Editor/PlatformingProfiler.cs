@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -99,6 +100,38 @@ public sealed class PlatformingProfiler : EditorWindow
 
     #endregion
 
+    #region Support data
+
+    private static void Split(List<SimulatedPathFrame> src, List<SimulatedPathFrame> dst, int index)
+    {
+        dst.AddRange(src.GetRange(index, src.Count - 1 - index));
+        src.RemoveRange(index, src.Count - 1 - index);
+    }
+
+    private static void Merge(List<SimulatedPathFrame> dst, List<SimulatedPathFrame> toAppend)
+    {
+        dst.AddRange(toAppend);
+        toAppend.Clear();
+    }
+
+    private struct SimulatedPathFrame
+    {
+        public Vector2 pos;
+        public Vector2 vel;
+        public float time;
+        public bool grounded;
+
+        public enum LedgeType
+        {
+            Descending = -1,
+            None = 0,
+            Ascending = 1
+        }
+        public LedgeType ledge;
+    }
+
+    #endregion
+
     private void OnGUI()
     {
         bool markRepaint = false;
@@ -187,6 +220,9 @@ public sealed class PlatformingProfiler : EditorWindow
             Handles.DrawDottedLine(endPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
         }
 
+        EditorGUI.EndChangeCheck();
+
+        //If we have a simulatable environment
         if (character != null)
         {
             //Setup
@@ -194,24 +230,68 @@ public sealed class PlatformingProfiler : EditorWindow
             c.currentAction = character.GetComponent<BaseMovementAction>();
             c.time.delta = timeResolution;
 
-            //Simulate
-            List<SimulatedPathData> path = SimulatePath(c);
+            NTree<List<SimulatedPathFrame>> paths;
+            //Prep simulation
+            {
+                List<SimulatedPathFrame> start = new List<SimulatedPathFrame>();
+                start.Add(new SimulatedPathFrame
+                {
+                    pos = startPosition,
+                    vel = Vector2.zero,
+                    time = 0
+                });
+                paths = new NTree<List<SimulatedPathFrame>>(start);
+            }
 
-            //Render basic path
-            Handles.color = Color.green;
-            Handles.DrawAAPolyLine(3, path.ConvertAll(x => (Vector3)x.pos).ToArray());
+            //Simulate until all paths are resolved
+            {
+                HashSet<SimulatedPathFrame> alreadyProcessed = new HashSet<SimulatedPathFrame>();
+                HashSet<SimulatedPathFrame> ends;
+                do
+                {
+                    ends = IdentifyBranchPoints(paths);
+                    //Simulate forward
+                    foreach (SimulatedPathFrame end in ends)
+                    {
+                        //Only if we haven't already processed it
+                        if (!alreadyProcessed.Contains(end))
+                        {
+                            alreadyProcessed.Add(end);
+                            paths.Find(x => x.data.Contains(end)).AddChild(SimulateForward(c, end)); //TODO path splitting
+                        }
+                    }
+                    //TODO path merging
+                } while (ends.Count > 0);
+            }
 
-            //Render time labels
-            for(float i = 0; i < path.Count; i += timeLabelResolution/timeResolution) Handles.Label(path[(int)i].pos, path[(int)i].time.ToString("n2")+"s");
+            //Render all
+            paths.Traverse(path =>
+            {
+                //Render basic path
+                Handles.color = Color.green;
+                Handles.DrawAAPolyLine(3, path.data.ConvertAll(x => (Vector3)x.pos).ToArray());
+
+                //Render time labels
+                for (float i = 0; i < path.data.Count; i += timeLabelResolution / timeResolution) Handles.Label(path.data[(int)i].pos, path.data[(int)i].time.ToString("n2") + "s");
+
+                //Render jump labels
+                //TODO implement
+            });
+
+            CastFunc cast = GetCastFunc(character.gameObject);
+            
+            /*
+            //TODO reimplement using sophisticated ledge detection
 
             //Render jump timing labels
             //TODO move to own method
-            RaycastHit2D? lastFrame = Physics2D.Raycast(path[0].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
-            for (int i = 1; i < path.Count; ++i)
+            RaycastHit2D? lastFrame = Physics2D.Raycast(paths[0].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
+            for (int i = 1; i < paths.Count; ++i)
             {
-                if(!path[i].grounded)// && Vector2.Dot(path[i].vel, Physics2D.gravity) > 0)
+                if(!paths[i].grounded)// && Vector2.Dot(path[i].vel, Physics2D.gravity) > 0)
                 {
-                    RaycastHit2D thisFrame = Physics2D.Raycast(path[i].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
+                    RaycastHit2D thisFrame = cast(paths[i].pos, Physics2D.gravity.normalized*jumpLedgeProbing);
+                    Vector2 hitPoint = paths[i].pos + Physics2D.gravity.normalized*thisFrame.distance;
 
                     if (lastFrame != null && thisFrame.collider != null //Detect when a collider first enters our raycast
                     && (lastFrame.Value.collider == null || Mathf.Abs(thisFrame.distance-lastFrame.Value.distance) > jumpLedgeThreshold)) //And when it's counted as a ledge
@@ -219,7 +299,7 @@ public sealed class PlatformingProfiler : EditorWindow
                         //Calculate time to impact
                         //Uses Y only but X would prob work too
                         float s = -thisFrame.distance;
-                        float v = path[i].vel.y;
+                        float v = paths[i].vel.y;
                         float a = Physics2D.gravity.y;
 
                         //s = ut + 1/2 * at^2
@@ -227,33 +307,23 @@ public sealed class PlatformingProfiler : EditorWindow
                         float t = -(v + Mathf.Sqrt(2*s*a+v*v))/a;
 
                         Handles.color = Color.cyan;
-                        Handles.DrawDottedLine(path[i].pos, thisFrame.point, 2);
-                        Handles.Label(thisFrame.point, (t*1000).ToString("n0")+"ms to react");
+                        Handles.DrawDottedLine(paths[i].pos, hitPoint, 2);
+                        Handles.DrawDottedLine(hitPoint, thisFrame.point, 2);
+                        Handles.Label(thisFrame.point, t.ToString("n3")+"sec to react\n"+(t/timeResolution).ToString("n0")+" simulation frames");
                     }
                     lastFrame = thisFrame;
                 } else lastFrame = null;
             }
+
+            // */
         }
-
-        EditorGUI.EndChangeCheck();
     }
 
-    private struct SimulatedPathData
+    private List<SimulatedPathFrame> SimulateForward(PlayerHost.Context context, SimulatedPathFrame start)
     {
-        public Vector2 pos;
-        public Vector2 vel;
-        public float  time;
-        public bool grounded;
-    }
-
-    private List<SimulatedPathData> SimulatePath(PlayerHost.Context context)
-    {
-        List<SimulatedPathData> output = new List<SimulatedPathData>();
-
-        SimulatedPathData data = new SimulatedPathData();
-        data.pos = startPosition;
-        data.vel = Vector2.zero;
-        data.time = 0;
+        List<SimulatedPathFrame> output = new List<SimulatedPathFrame>();
+        output.Add(start);
+        SimulatedPathFrame data = start;
 
         float signBeforeMove;
         CastFunc cast = GetCastFunc(character.gameObject);
@@ -261,8 +331,6 @@ public sealed class PlatformingProfiler : EditorWindow
 
         context.currentAction.DoSetup(ref context, null, IAction.ExecMode.SimulatePath);
         
-        output.Add(data);
-
         do
         {
             //Update escape condition
@@ -281,24 +349,27 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Decide whether to jump
             {
-                Vector2 posPlusVel = data.pos + data.vel * context.time.delta * 4;
+                Vector2 posPlusVel = data.pos + data.vel * context.time.delta * 4; //FIXME magic number
                 RaycastHit2D ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
-                Vector2 here = ledgeDet0.collider != null ? ledgeDet0.point : (data.pos + Vector2.down * (jumpLedgeProbing+colliderSize.y));
+                float here = ledgeDet0.collider != null ? ledgeDet0.distance : float.MaxValue;
                 RaycastHit2D ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
-                Vector2 there = ledgeDet1.collider != null ? ledgeDet1.point : (posPlusVel + Vector2.down * (jumpLedgeProbing+colliderSize.y));
-
+                float there = ledgeDet1.collider != null ? ledgeDet1.distance : float.MaxValue;
+                
                 context.input.jump = false;
 
-                float dy = there.y - here.y;
-                
-                //Run ledge detection if our target is higher than we are right now
-                if(jumpIfLedge && endPosition.y > data.pos.y) context.input.jump |= dy < -jumpLedgeThreshold;
+                //Run ledge detection
+                float dy = there - here;
+                if(Mathf.Abs(dy) > jumpLedgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Ascending : SimulatedPathFrame.LedgeType.Descending;
+
+                //Jump-if-ledge
+                context.input.jump |= jumpIfLedge && data.ledge != SimulatedPathFrame.LedgeType.None;
 
                 //Run steep slope detection
                 if (jumpIfTooSteep && ledgeDet1.collider != null //Do we have a slope that can even be counted?
                     && Mathf.Sign(ledgeDet1.normal.x) != Mathf.Sign(data.vel.x) //Are we moving against the slope?
                     && Mathf.Abs(Vector2.Angle(-ledgeDet1.normal, Physics2D.gravity)) > context.owner.maxGroundAngle //Compare angles
                 ) context.input.jump = true;
+
             }
 
             //Tick time and calculate velocity
@@ -336,6 +407,20 @@ public sealed class PlatformingProfiler : EditorWindow
         while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
         context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
+
+        return output;
+    }
+
+    private HashSet<SimulatedPathFrame> IdentifyBranchPoints(NTree<List<SimulatedPathFrame>> tree)
+    {
+        HashSet<SimulatedPathFrame> output = new HashSet<SimulatedPathFrame>();
+
+        tree.Traverse(
+            node =>
+            {
+                //TODO implement detection
+            }
+        );
 
         return output;
     }

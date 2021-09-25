@@ -87,30 +87,17 @@ public static class LINQExt
 }
 
 //From https://stackoverflow.com/a/2012855
-public class NTree<T>
+public class NTree<T> : IEnumerable<NTree<T>>
 {
     public delegate void Visitor(NTree<T> nodeData);
 
     public T data { get; private set; }
-    private LinkedList<NTree<T>> children;
+    public LinkedList<NTree<T>> children;
 
     public NTree(T data)
     {
         this.data = data;
         children = new LinkedList<NTree<T>>();
-    }
-
-    public void AddChild(T data)
-    {
-        children.AddFirst(new NTree<T>(data));
-    }
-
-    public NTree<T> GetChild(int i)
-    {
-        foreach (NTree<T> n in children)
-            if (--i == 0)
-                return n;
-        return null;
     }
 
     public void Traverse(Visitor visitor)
@@ -122,7 +109,7 @@ public class NTree<T>
     public NTree<T> Find(System.Func<NTree<T>, bool> predicate)
     {
         NTree<T> output = null;
-
+        
         Traverse(
             x => {
                 if (predicate(x)) output = x;
@@ -130,5 +117,21 @@ public class NTree<T>
         );
 
         return output;
+    }
+
+    public IEnumerator<NTree<T>> GetEnumerator()
+    {
+        //Evaluate
+        HashSet<NTree<T>> vals = new HashSet<NTree<T>>();
+        Traverse(x => vals.Add(x));
+        return vals.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        //Evaluate
+        HashSet<NTree<T>> vals = new HashSet<NTree<T>>();
+        Traverse(x => vals.Add(x));
+        return vals.GetEnumerator();
     }
 }

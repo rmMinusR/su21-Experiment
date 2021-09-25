@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -108,6 +109,23 @@ public sealed class PlatformingProfiler : EditorWindow
         src.RemoveRange(index, src.Count - 1 - index);
     }
 
+    private static void Split(NTree<List<SimulatedPathFrame>> src, int index)
+    {
+        //Split data
+        NTree<List<SimulatedPathFrame>> afterSplit = new NTree<List<SimulatedPathFrame>>(new List<SimulatedPathFrame>());
+        Split(src.data, afterSplit.data, index);
+
+        //Swap children
+        {
+            LinkedList<NTree<List<SimulatedPathFrame>>> tmp = afterSplit.children;
+            afterSplit.children = src.children;
+            src.children = tmp;
+        }
+
+        //Link
+        src.children.AddFirst(afterSplit);
+    }
+
     private static void Merge(List<SimulatedPathFrame> dst, List<SimulatedPathFrame> toAppend)
     {
         dst.AddRange(toAppend);
@@ -128,6 +146,14 @@ public sealed class PlatformingProfiler : EditorWindow
             Ascending = 1
         }
         public LedgeType ledge;
+
+        public class CompareByTime : IComparer<SimulatedPathFrame>
+        {
+            public int Compare(SimulatedPathFrame x, SimulatedPathFrame y)
+            {
+                return Comparer<float>.Default.Compare(x.time, y.time);
+            }
+        }
     }
 
     #endregion
@@ -230,6 +256,8 @@ public sealed class PlatformingProfiler : EditorWindow
             c.currentAction = character.GetComponent<BaseMovementAction>();
             c.time.delta = timeResolution;
 
+            CastFunc playerCast = GetCastFunc(character.gameObject);
+
             NTree<List<SimulatedPathFrame>> paths;
             //Prep simulation
             {
@@ -245,23 +273,55 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Simulate until all paths are resolved
             {
-                HashSet<SimulatedPathFrame> alreadyProcessed = new HashSet<SimulatedPathFrame>();
-                HashSet<SimulatedPathFrame> ends;
+                HashSet<SimulatedPathFrame> frontier = new HashSet<SimulatedPathFrame>();
                 do
                 {
-                    ends = IdentifyBranchPoints(paths);
+                    //Pop one element
+                    SimulatedPathFrame start = frontier.GetEnumerator().Current;
+                    frontier.Remove(start);
+                    c.time.active = c.time.stable = start.time; //Ensure Context isn't stale
+
                     //Simulate forward
-                    foreach (SimulatedPathFrame end in ends)
+                    List<SimulatedPathFrame> forwardPath = new List<SimulatedPathFrame> { start };
+                    SimulateForward(c, ref forwardPath); //Context won't bleed over, but lastGroundTime won't either. FIXME
+
+                    //Ledge detection is already done as part of forward simulation
+                    //List<SimulatedPathFrame> ledges = forwardPath.Where(x => x.ledge == SimulatedPathFrame.LedgeType.Ascending).ToList();
+
+                    //Backtrack and validate for each ledge
+                    for(int i = 0; i < forwardPath.Count; ++i)
                     {
-                        //Only if we haven't already processed it
-                        if (!alreadyProcessed.Contains(end))
+                        SimulatedPathFrame ledge = forwardPath[i];
+                        if (ledge.ledge == SimulatedPathFrame.LedgeType.Ascending)
                         {
-                            alreadyProcessed.Add(end);
-                            paths.Find(x => x.data.Contains(end)).AddChild(SimulateForward(c, end)); //TODO path splitting
+                            //Raycast to find positional offset
+                            Vector2 backtrackPositionalOffset = playerCast(ledge.pos, Physics2D.gravity.normalized*jumpLedgeProbing).point - forwardPath[forwardPath.Count - 1].pos;
+
+                            //Offset based on where we expect to land
+                            //FIXME can cause us to spawn in the ground if sloped
+                            //FIXME time will be incorrectly set
+                            //TODO split ancestor and merge first?
+                            
+                            SimulatedPathFrame backtrackedStart = forwardPath[0]; backtrackedStart.pos += backtrackPositionalOffset;
+                            List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame> { backtrackedStart };
+
+                            //Run simulation forward to ensure our prediction is valid
+                            SimulateForward(c, ref backtrackedPath);
+
+                            //TODO finish
+
+                            //Search for start frame
+                            //paths.Where(x => x.data[0].time < backtrackTime && backtrackTime < x.data[x.data.Count-1].time) //Within the right timeframe
+                            //     .Min(x => {
+                            //         int index = x.data.BinarySearch(new SimulatedPathFrame { time = backtrackTime }, new SimulatedPathFrame.CompareByTime());
+                            //         SimulatedPathFrame frame = x.data[index];
+                            //         
+                            //     });
                         }
                     }
+
                     //TODO path merging
-                } while (ends.Count > 0);
+                } while (frontier.Count > 0);
             }
 
             //Render all
@@ -319,11 +379,9 @@ public sealed class PlatformingProfiler : EditorWindow
         }
     }
 
-    private List<SimulatedPathFrame> SimulateForward(PlayerHost.Context context, SimulatedPathFrame start)
+    private void SimulateForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path)
     {
-        List<SimulatedPathFrame> output = new List<SimulatedPathFrame>();
-        output.Add(start);
-        SimulatedPathFrame data = start;
+        SimulatedPathFrame data = path[path.Count-1];
 
         float signBeforeMove;
         CastFunc cast = GetCastFunc(character.gameObject);
@@ -401,27 +459,11 @@ public sealed class PlatformingProfiler : EditorWindow
             }
             
             //Mark frame
-            output.Add(data);
+            path.Add(data);
         }
         //Until we reach our destination, or run out of simulation time
         while (signBeforeMove == Mathf.Sign(endPosition.x - data.pos.x) && data.time < maxEndTime);
 
         context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
-
-        return output;
-    }
-
-    private HashSet<SimulatedPathFrame> IdentifyBranchPoints(NTree<List<SimulatedPathFrame>> tree)
-    {
-        HashSet<SimulatedPathFrame> output = new HashSet<SimulatedPathFrame>();
-
-        tree.Traverse(
-            node =>
-            {
-                //TODO implement detection
-            }
-        );
-
-        return output;
     }
 }

@@ -302,25 +302,31 @@ public sealed class PlatformingProfiler : EditorWindow
                             //FIXME time will be incorrectly set
                             //TODO split ancestor and merge first?
                             
-                            SimulatedPathFrame backtrackedStart = forwardPath[0]; backtrackedStart.pos += backtrackPositionalOffset;
-                            List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame> { backtrackedStart };
+                            //Binary search until accuracy is acceptable
+                            float accuracyThreshold = 0.1f;
+                            Vector2 curMin = Vector2.zero;                    //TODO match closest point on existing path
+                            Vector2 curMax = backtrackPositionalOffset * 2;   //TODO match closest point on existing path
+                            do
+                            {
+                                SimulatedPathFrame backtrackedStart = forwardPath[0]; backtrackedStart.pos += backtrackPositionalOffset;
+                                List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame> { backtrackedStart };
 
-                            //Run simulation forward to ensure our prediction is valid
-                            SimulateForward(c, ref backtrackedPath);
+                                Vector2 pivot = (curMin+curMax)/2;
 
-                            //TODO finish
+                                //Run simulation forward to check if our prediction is valid
+                                SimulateForward(c, ref backtrackedPath); //TODO add time-based exit condition
 
-                            //Search for start frame
-                            //paths.Where(x => x.data[0].time < backtrackTime && backtrackTime < x.data[x.data.Count-1].time) //Within the right timeframe
-                            //     .Min(x => {
-                            //         int index = x.data.BinarySearch(new SimulatedPathFrame { time = backtrackTime }, new SimulatedPathFrame.CompareByTime());
-                            //         SimulatedPathFrame frame = x.data[index];
-                            //         
-                            //     });
+                                //TODO Search for end's closest point
+
+                                //TODO Compare and move pivot into min or max, based on closest point on existingpath
+
+                            } while ((curMin-curMax).magnitude > accuracyThreshold);
+
+                            //TODO merge into existing path
                         }
                     }
 
-                    //TODO path merging
+                    //TODO path merging/pruning here as well?
                 } while (frontier.Count > 0);
             }
 

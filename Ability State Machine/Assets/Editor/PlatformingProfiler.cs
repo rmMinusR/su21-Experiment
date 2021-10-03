@@ -89,7 +89,7 @@ public sealed class PlatformingProfiler : EditorWindow
     private float snapInputThreshold = 0.05f;
 
     private float jumpLedgeProbing = 5f;
-    private float jumpLedgeThreshold = 1f;
+    private float ledgeThreshold = 1f;
     private bool jumpIfLedge = true;
     private bool jumpIfTooSteep = false;
 
@@ -142,9 +142,9 @@ public sealed class PlatformingProfiler : EditorWindow
 
         public enum LedgeType
         {
-            Descending = -1,
+            Falling = -1,
             None = 0,
-            Ascending = 1
+            Rising = 1
         }
         public LedgeType ledge;
 
@@ -189,8 +189,8 @@ public sealed class PlatformingProfiler : EditorWindow
         if(jumpIfLedge) {
             float tmp = EditorGUILayout.Slider("Ledge probe (m)", jumpLedgeProbing, 5, 50);
             if (jumpLedgeProbing != tmp) { jumpLedgeProbing = tmp; markRepaint = true; }
-            tmp = EditorGUILayout.Slider("Ledge drop threshold (m)", jumpLedgeThreshold, 1, 10);
-            if (jumpLedgeThreshold != tmp) { jumpLedgeThreshold = tmp; markRepaint = true; }
+            tmp = EditorGUILayout.Slider("Ledge drop threshold (m)", ledgeThreshold, 1, 10);
+            if (ledgeThreshold != tmp) { ledgeThreshold = tmp; markRepaint = true; }
         }
 
         EditorGUILayout.Space();
@@ -303,8 +303,8 @@ public sealed class PlatformingProfiler : EditorWindow
                 else if(pathsTree == null) pathsTree = forwardPathTreeNode;
 
                 //Push to frontier
-                SimulatedPathFrame forwardLast = forwardPath[forwardPath.Count - 1];
-                frontier.Add(Tuple.Create(forwardPathTreeNode, forwardLast));
+                SimulatedPathFrame stub = forwardPath[forwardPath.Count - 1];
+                frontier.Add(Tuple.Create(forwardPathTreeNode, stub));
                 forwardPath.RemoveAt(forwardPath.Count - 1); //Pop last frame since it will be of different state
 
                 Debug.Log(forwardPath[0].pos + " => " + forwardPath[forwardPath.Count - 1].pos);
@@ -312,17 +312,18 @@ public sealed class PlatformingProfiler : EditorWindow
                 if (parent != null)
                 {
                     //Backtrack and validate for each ledge
-                    foreach(SimulatedPathFrame ledge in forwardPath.Where(x => x.ledge == SimulatedPathFrame.LedgeType.Descending))
+                    foreach(SimulatedPathFrame ledge in forwardPath.Where(x => x.ledge == SimulatedPathFrame.LedgeType.Rising))
                     {
                         //Raycast to find where we expect to land
                         Vector2 expectedLandingPosition = playerCast(ledge.pos, Physics2D.gravity.normalized*jumpLedgeProbing).point;
+                        Vector2 expectedStartingPosition = parent.data[parent.data.Count-1].pos + (expectedLandingPosition - stub.pos);
                         Debug.Log("Ledge at "+expectedLandingPosition);
                         int pivot = 0;
                         //Start with pivot as closest point to our predicted start point
                         {
                             float closestApproach = float.MaxValue;
                             for(int i = 0; i < parent.data.Count; ++i) {
-                                float dist = Vector2.Distance(parent.data[i].pos, expectedLandingPosition);
+                                float dist = Vector2.Distance(parent.data[i].pos, expectedStartingPosition);
                                 if (dist < closestApproach)
                                 {
                                     closestApproach = dist;
@@ -335,9 +336,13 @@ public sealed class PlatformingProfiler : EditorWindow
                         //Binary search until we've found the specific frames
                         {
                             int bsMin = 0;
-                            int bsMax = parent.data.Count;
+                            int bsMax = parent.data.Count-1;
+                            int iterationCounter = 0;
                             do
                             {
+                                iterationCounter++;
+                                Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos);
+
                                 //Reset for next run through
                                 backtrackedPath.Clear();
                                 backtrackedPath.Add(parent.data[pivot]);
@@ -347,7 +352,7 @@ public sealed class PlatformingProfiler : EditorWindow
                                     (vPrev, vCur) =>
                                         vPrev.grounded != vCur.grounded //Did we just hit ground?
                                         || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
-                                        || (Vector2.Distance(vCur.pos, forwardLast.pos) > Vector2.Distance(vPrev.pos, forwardLast.pos) && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0) //Are we moving away from our target location? (Only after we've started falling again)
+                                        || (Vector2.Distance(vCur.pos, stub.pos) > Vector2.Distance(vPrev.pos, stub.pos) && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0) //Are we moving away from our target location? (Only after we've started falling again)
                                 );
 
                                 Vector2 status = backtrackedPath[backtrackedPath.Count-1].pos - expectedLandingPosition;
@@ -360,11 +365,10 @@ public sealed class PlatformingProfiler : EditorWindow
                                 if (bsMax - bsMin > 1) pivot = (bsMin+bsMax) / 2;
 
                             } while (bsMax-bsMin > 1); //1 frame accuracy
+                            Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
                         }
                         backtrackedPath.TrimExcess();
-
-                        Debug.Log("Found pivot="+pivot);
-
+                        
                         //Merge head into parent
                         //Split(parent, pivot); //FIXME breaks everything by allowing empty list
                         parent.children.AddLast(new NTree<List<SimulatedPathFrame>>(backtrackedPath)); //Parent is now the first part of forwardPath's parent
@@ -384,15 +388,20 @@ public sealed class PlatformingProfiler : EditorWindow
                 Handles.color = Color.green;
                 Handles.DrawAAPolyLine(3, path.data.ConvertAll(x => (Vector3)x.pos).ToArray());
 
-                //Render tail to show forking
+                //Render time labels
+                for (float i = 0; i < path.data.Count; i += timeLabelResolution / timeResolution) Handles.Label(path.data[(int)i].pos, path.data[(int)i].time.ToString("n2") + "s");
+
+                //Render head to show forking
                 Handles.color = Color.yellow;
                 Handles.DrawWireCube(path.data[0].pos, Vector3.one * 0.05f);
 
-                //Render time labels
-                //for (float i = 0; i < path.data.Count; i += timeLabelResolution / timeResolution) Handles.Label(path.data[(int)i].pos, path.data[(int)i].time.ToString("n2") + "s");
-
-                //Render jump labels
-                //TODO implement
+                //Render ledge debug data
+                foreach(SimulatedPathFrame ledge in path.data.Where(x => x.ledge != SimulatedPathFrame.LedgeType.None))
+                {
+                    if(ledge.ledge == SimulatedPathFrame.LedgeType.Rising ) Handles.color = Color.cyan;
+                    if(ledge.ledge == SimulatedPathFrame.LedgeType.Falling) Handles.color = Color.red;
+                    Handles.DrawWireCube(ledge.pos, Vector3.one * 0.15f);
+                }
             });
             Debug.Log("========");
 
@@ -470,8 +479,8 @@ public sealed class PlatformingProfiler : EditorWindow
                 context.input.jump = false;
 
                 //Run ledge detection
-                float dy = there - here;
-                if(Mathf.Abs(dy) > jumpLedgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Ascending : SimulatedPathFrame.LedgeType.Descending;
+                float dy = here - there; //Inverted because these are technically distance down, not distance up
+                if(Mathf.Abs(dy) > ledgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Rising : SimulatedPathFrame.LedgeType.Falling;
                 else data.ledge = SimulatedPathFrame.LedgeType.None;
 
                 //Jump-if-ledge

@@ -294,7 +294,8 @@ public sealed class PlatformingProfiler : EditorWindow
                 List<SimulatedPathFrame> forwardPath = new List<SimulatedPathFrame> { start };
                 SimulateForward(c, ref forwardPath,
                     (vPrev, vCur) => vPrev.grounded != vCur.grounded //Has ground state changed?
-                                    || (foundSolution |= Mathf.Sign(endPosition.x-vPrev.pos.x) != Mathf.Sign(endPosition.x-vCur.pos.x)) //Have we reached our target?
+                                    || (foundSolution |= Mathf.Sign(endPosition.x-vPrev.pos.x) != Mathf.Sign(endPosition.x-vCur.pos.x)), //Have we reached our target?
+                    (v) => false
                 ); //Context won't bleed over, but lastGroundTime won't either. FIXME
 
                 //Add to path tree
@@ -341,7 +342,6 @@ public sealed class PlatformingProfiler : EditorWindow
                             do
                             {
                                 iterationCounter++;
-                                Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos);
 
                                 //Reset for next run through
                                 backtrackedPath.Clear();
@@ -349,13 +349,14 @@ public sealed class PlatformingProfiler : EditorWindow
 
                                 //Run simulation forward to check if our prediction is valid
                                 SimulateForward(c, ref backtrackedPath,
-                                    (vPrev, vCur) =>
-                                        vPrev.grounded != vCur.grounded //Did we just hit ground?
-                                        || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
-                                        || (Vector2.Distance(vCur.pos, stub.pos) > Vector2.Distance(vPrev.pos, stub.pos) && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0) //Are we moving away from our target location? (Only after we've started falling again)
+                                    (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
+                                                  || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
+                                                  || (Mathf.Sign(vCur.pos.y-stub.pos.y) != Mathf.Sign(vPrev.pos.y-stub.pos.y) && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
+                                    (v) => true
                                 );
 
                                 Vector2 status = backtrackedPath[backtrackedPath.Count-1].pos - expectedLandingPosition;
+                                Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos+" // status = "+status.x);
 
                                 //FIXME bad practice, find a better comparison
                                 if (status.x < 0) bsMin = pivot; //delta-X is negative, we undershot
@@ -446,7 +447,7 @@ public sealed class PlatformingProfiler : EditorWindow
         }
     }
 
-    private void SimulateForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop)
+    private void SimulateForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop, Func<SimulatedPathFrame, bool> extraJumpConditions)
     {
         SimulatedPathFrame data = path[path.Count-1];
 
@@ -492,6 +493,7 @@ public sealed class PlatformingProfiler : EditorWindow
                     && Mathf.Abs(Vector2.Angle(-ledgeDet1.normal, Physics2D.gravity)) > context.owner.maxGroundAngle //Compare angles
                 ) context.input.jump = true;
 
+                context.input.jump |= extraJumpConditions(data);
             }
 
             //Tick time and calculate velocity

@@ -91,7 +91,7 @@ public class NTree<T> : IEnumerable<NTree<T>>
 {
     public delegate void Visitor(NTree<T> nodeData);
 
-    public T data { get; private set; }
+    public T data;
     public LinkedList<NTree<T>> children;
 
     public NTree(T data)

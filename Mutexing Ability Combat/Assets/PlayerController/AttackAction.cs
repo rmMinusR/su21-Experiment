@@ -1,10 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class AttackAction : MonoBehaviour, IAction
+public class AttackAction : IAction
 {
-    public Vector2 AllowedSimulatedInterval => throw new System.NotImplementedException();
-
     private InputAction controlActivate;
     private void Awake()
     {

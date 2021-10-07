@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class BaseMovementAction : MonoBehaviour, IAction
+public sealed class BaseMovementAction : IAction
 {
-    public Vector2 AllowedSimulatedInterval => new Vector2(0, 3);
-
     public bool AllowEntry(in PlayerHost.Context context) => false; //Prevent accidentally entering as activeMovementAction
     public bool AllowExit(in PlayerHost.Context context) => true;
 

@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Scripts that take control of movement should implement this for mutual exclusion safety with Rigidbody.
 /// </summary>
-public interface IAction
+public abstract class IAction : MonoBehaviour
 {
     public enum ExecMode
     {
@@ -14,43 +14,56 @@ public interface IAction
         SimulateCurves
     }
 
-#if UNITY_EDITOR
-    public Vector2 AllowedSimulatedInterval { get; }
-#endif
+}
 
-    public bool AllowEntry(in PlayerHost.Context context);
-    public bool AllowExit(in PlayerHost.Context context);
+[Serializable]
+public sealed class Mutex<T> where T : class
+{
+    [SerializeReference] [InspectorReadOnly] private OwnedMutex<T> claimant;
+    public bool isClaimed => claimant != null;
 
-    /// <summary>
-    /// Called when first taking effect. Do any setup code here. Not necessarily on the same frame as a call to DoPhysics.
-    /// </summary>
-    /// <param name="context">Host context</param>
-    /// <param name="prev">Previously-active action</param>
-    /// <param name="mode">Are we live, or simulating?</param>
-    public void DoSetup(ref PlayerHost.Context context, IAction prev, ExecMode mode);
-    
-    /// <summary>
-    /// While active, called as part of every physics update frame to run this
-    /// policy's unique code. Must be relatively stateless, only reading variables
-    /// that will NEVER change at runtime. This allows it to work both ingame and
-    /// for simulating acceleration curves.
-    /// 
-    /// Rigidbody2D.velocity will stutter if assigned multiple times in the same frame,
-    /// and should NEVER be changed directly from this script. Rather, use this method.
-    /// </summary>
-    /// <param name="context">Host context</param>
-    /// <param name="currentVelocity">Rigidbody's current velocity</param>
-    /// <param name="mode">Are we live, or simulating?</param>
-    /// <returns>Rigidbody's new velocity</returns>
-    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 currentVelocity, ExecMode mode);
+    private T _owner;
+    public T Owner => _owner;
 
-    /// <summary>
-    /// Called when no longer taking effect. Do any cleanup code here. Not necessarily on the same frame as a call to DoPhysics.
-    /// </summary>
-    /// <param name="context">Host context</param>
-    /// <param name="prev">Previously-active action</param>
-    /// <param name="mode">Are we live, or simulating?</param>
-    public void DoCleanup(ref PlayerHost.Context context, IAction next, ExecMode mode);
+    public OwnedMutex<T> Claim(T byWho)
+    {
+        if (!isClaimed)
+        {
+            _owner = byWho;
+            return claimant = new OwnedMutex<T>(this);
+        }
+        else throw new InvalidOperationException();
+    }
+
+    public void Release(OwnedMutex<T> by, bool force = false)
+    {
+        if (isClaimed && (claimant == by || force))
+        {
+            claimant.Invalidate();
+            claimant = null;
+            _owner = null;
+        }
+        else throw new InvalidOperationException();
+    }
+}
+
+[Serializable]
+public sealed class OwnedMutex<T> where T : class
+{
+    [SerializeReference] [HideInInspector] private Mutex<T> mutex;
+
+    public OwnedMutex(Mutex<T> mutex)
+    {
+        this.mutex = mutex;
+    }
+
+    public void Release()
+    {
+        mutex.Release(this);
+        Invalidate();
+    }
+
+    public void Invalidate() => mutex = null;
 }
 
 public enum Facing

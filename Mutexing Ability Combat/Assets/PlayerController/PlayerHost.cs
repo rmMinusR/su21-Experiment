@@ -59,7 +59,6 @@ public sealed class PlayerHost : MonoBehaviour
             input = new InputParam();
             time = new TimeParam();
             facing = Facing.Right;
-            currentAction = null;
         }
 
         //Ground checking
@@ -85,8 +84,10 @@ public sealed class PlayerHost : MonoBehaviour
         public InputParam input;
         public TimeParam time;
         public Facing facing;
-        public IAction currentAction; //TODO how to serialize?
     }
+
+    public Mutex<IAction> casting = new Mutex<IAction>();
+    public Mutex<IAction> moving  = new Mutex<IAction>();
 
     #region Ground/ceiling checking
 
@@ -187,50 +188,9 @@ public sealed class PlayerHost : MonoBehaviour
     {
         _DoGroundCheck();
 
-        if(!__bufChgFlagActiveMovement) _SearchForActionStateChanges();
-        _ProcessActionChangeBuffer();
-
         _UpdateContext();
 
         _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.ExecMode.Live);
-    }
-    
-    private void _SearchForActionStateChanges()
-    {
-        //TODO cleanup
-        //Check for exit flag from current action
-        if (activeMovement == null || activeMovement.AllowExit(in context))
-        {
-            //Default to base movement action if nothing else is found
-            activeMovement = null;
-
-            //Search for actions we can enter
-            foreach (IAction i in GetComponents<IAction>())
-            {
-                if (i.AllowEntry(in context))
-                {
-                    activeMovement = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    private void _ProcessActionChangeBuffer()
-    {
-        //Is there a change queued?
-        if(__bufChgFlagActiveMovement)
-        {
-            //Send entry/exit messages
-            if (__activeMovement != null) __activeMovement.DoCleanup(ref context, __bufChgActiveMovement, IAction.ExecMode.Live);
-            if (__bufChgActiveMovement != null) __bufChgActiveMovement.DoSetup(ref context, __activeMovement, IAction.ExecMode.Live);
-
-            //Change value and reset active timer
-            __activeMovement = __bufChgActiveMovement;
-            context.time.active = 0;
-            
-            __bufChgFlagActiveMovement = false;
-        }
     }
 
     private void _UpdateContext()
@@ -241,8 +201,6 @@ public sealed class PlayerHost : MonoBehaviour
         context.input.global = controlMovement.ReadValue<Vector2>();
         context.input.local = context.surfaceToGlobal.inverse.MultiplyVector(context.input.global);
         context.input.jump = controlJump.ReadValue<float>() > 0.5f;
-
-        context.currentAction = activeMovement != null ? activeMovement : baseMovement;
     }
 
     public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
@@ -254,19 +212,18 @@ public sealed class PlayerHost : MonoBehaviour
                 1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
             ).normalized;
 
-        if(mode == IAction.ExecMode.Live)
-        {
-            //Show debug surface lines
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.surfaceRight, Color.red  , 0.2f);
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.surfaceUp   , Color.green, 0.2f);
-        }
+        IAction movementCommand = moving.Owner;
+        if (movementCommand == null) movementCommand = baseMovement;
+        
+        EventBus.Instance.DispatchEvent(PlayerOnPhysicsEvent);
 
-        //Execute currently-active movement action
-        return context.currentAction.DoPhysics(ref context, velocity, mode);
+        return velocity;
     }
 
-    private IAction __activeMovement;
-    private IAction __bufChgActiveMovement;
-    private bool __bufChgFlagActiveMovement = false;
-    public IAction activeMovement { get => __activeMovement; set { __bufChgActiveMovement = value; __bufChgFlagActiveMovement = true; } }
+    private void OnDrawGizmos()
+    {
+        //Show debug surface lines
+        Gizmos.color = Color.red;   Gizmos.DrawLine(transform.position, transform.position + (Vector3)context.surfaceRight);
+        Gizmos.color = Color.green; Gizmos.DrawLine(transform.position, transform.position + (Vector3)context.surfaceUp   );
+    }
 }

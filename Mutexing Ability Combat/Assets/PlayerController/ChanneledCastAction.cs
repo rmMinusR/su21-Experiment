@@ -1,10 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ChanneledCastAction : MonoBehaviour, IAction
+public class ChanneledCastAction : IAction
 {
-    public Vector2 AllowedSimulatedInterval => throw new System.NotImplementedException();
-
     private InputAction controlActivate;
     private void Awake()
     {

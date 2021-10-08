@@ -19,29 +19,26 @@ public abstract class IAction : MonoBehaviour
 [Serializable]
 public sealed class Mutex<T> where T : class
 {
-    [SerializeReference] [InspectorReadOnly] private OwnedMutex<T> claimant;
-    public bool isClaimed => claimant != null;
-
     private T _owner;
     public T Owner => _owner;
+    public bool isClaimed => _owner != null;
 
     public OwnedMutex<T> Claim(T byWho)
     {
         if (!isClaimed)
         {
             _owner = byWho;
-            return claimant = new OwnedMutex<T>(this);
+            return new OwnedMutex<T>(this);
         }
         else throw new InvalidOperationException();
     }
 
     public void Release(OwnedMutex<T> by, bool force = false)
     {
-        if (isClaimed && (claimant == by || force))
+        if (isClaimed && (Owner == by.Owner || force))
         {
-            claimant.Invalidate();
-            claimant = null;
             _owner = null;
+            by.Invalidate();
         }
         else throw new InvalidOperationException();
     }
@@ -50,7 +47,9 @@ public sealed class Mutex<T> where T : class
 [Serializable]
 public sealed class OwnedMutex<T> where T : class
 {
-    [SerializeReference] [HideInInspector] private Mutex<T> mutex;
+    [SerializeField] [HideInInspector] private Mutex<T> mutex;
+    [SerializeField] private T _owner;
+    public T Owner => _owner;
 
     public OwnedMutex(Mutex<T> mutex)
     {

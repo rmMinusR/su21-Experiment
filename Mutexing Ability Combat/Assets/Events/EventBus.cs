@@ -28,43 +28,48 @@ public sealed class EventBus : MonoBehaviour
 
     public void AddListener(IEventListener listener, System.Type eventType) => listeners.GetOrCreate(eventType).Add(listener);
     public void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].Remove(listener);
-    public void RemoveListenerFromAll(IEventListener listener, System.Type eventType)
+    public void RemoveListenerFromAll(IEventListener listener)
     {
         foreach(HashSet<IEventListener> i in listeners.Values) i.Remove(listener);
     }
 
     #endregion
 
-    public void DispatchEvent(ref Event e)
+    public void DispatchEvent(Event e)
     {
         for(System.Type t = e.GetType(); t != typeof(object); t = t.BaseType)
         {
-            if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t]) i.OnRecieveEvent(ref e);
+            if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t]) i.OnRecieveEvent(e);
         }
     }
 }
 
+
 public interface IEventListener
 {
-    public void OnRecieveEvent(ref Event e);
+    public void OnRecieveEvent(Event e);
 }
+
+public abstract class ScopedEventListener : MonoBehaviour, IEventListener
+{
+    protected virtual void OnEnable()
+    {
+        IEnumerator<System.Type> types = GetListenedEventTypes();
+        while(types.MoveNext()) EventBus.Instance.AddListener(this, types.Current);
+    }
+
+    protected virtual void OnDisable()
+    {
+        EventBus.Instance.RemoveListenerFromAll(this);
+    }
+
+    protected abstract IEnumerator<System.Type> GetListenedEventTypes();
+
+    public abstract void OnRecieveEvent(Event e);
+}
+
 
 public abstract class Event
 {
     public bool isCancelled;
-}
-
-public class UpdateStatsEvent : Event
-{
-    public float moveSpeedMultiplier;
-}
-
-public class ActionWindupEvent : Event
-{
-
-}
-
-public class ActionCastEvent : Event
-{
-
 }

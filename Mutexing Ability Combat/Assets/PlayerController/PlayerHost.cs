@@ -54,7 +54,7 @@ public sealed class PlayerHost : MonoBehaviour
             
             _lastGroundTime = -1000;
             _surfaceUp = Vector2.up;
-            _lastKnownFlattest = null;
+            lastKnownFlattest = null;
 
             input = new InputParam();
             time = new TimeParam();
@@ -77,7 +77,7 @@ public sealed class PlayerHost : MonoBehaviour
 
 
         //Live, un-delayed surface motion
-        [NonSerialized] private Contact? _lastKnownFlattest; public Contact? lastKnownFlattest { get => _lastKnownFlattest; set => _lastKnownFlattest = value; }
+        public Contact? lastKnownFlattest;
         public float CurrentSurfaceAngle(float time) => IsGrounded ? lastKnownFlattest?.angle ?? 0 : 0;
 
         //Params most relevant to basic function
@@ -212,10 +212,15 @@ public sealed class PlayerHost : MonoBehaviour
                 1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
             ).normalized;
 
-        IAction movementCommand = moving.Owner;
-        if (movementCommand == null) movementCommand = baseMovement;
+        //Basic movement
+        Events.BasicMoveEvent basicMoveEvent = new Events.BasicMoveEvent();
+        EventBus.Instance.DispatchEvent(basicMoveEvent);
+        if(!basicMoveEvent.isCancelled) velocity += baseMovement.DoPhysics(ref context, velocity, mode);
         
-        EventBus.Instance.DispatchEvent(PlayerOnPhysicsEvent);
+        //Special movement
+        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this);
+        EventBus.Instance.DispatchEvent(moveQuery);
+        if(!moveQuery.isCancelled) velocity += moveQuery.movement;
 
         return velocity;
     }

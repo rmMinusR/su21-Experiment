@@ -98,6 +98,8 @@ public sealed class PlatformingProfiler : EditorWindow
     private float physicsEpsilon = 0.00095f;
     private int nMicroframes = 1;
 
+    private bool showDebugData = false;
+
     private InputTargettingMode inputTargettingMode = InputTargettingMode.EightWay;
 
     #endregion
@@ -223,6 +225,13 @@ public sealed class PlatformingProfiler : EditorWindow
             if(nMicroframes != tmp) { nMicroframes = tmp; markRepaint = true; }
         }
 
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Misc.", EditorStyles.boldLabel);
+        {
+            bool tmp = EditorGUILayout.Toggle("Show debug info", showDebugData);
+            if(showDebugData != tmp) { showDebugData = tmp; markRepaint = true; }
+        }
+
         if (markRepaint) SceneView.RepaintAll();
     }
 
@@ -275,6 +284,9 @@ public sealed class PlatformingProfiler : EditorWindow
                 }
             ));
 
+            System.Diagnostics.Stopwatch simulationTimeTaken = new System.Diagnostics.Stopwatch();
+            simulationTimeTaken.Start();
+
             //Simulate until all paths are resolved, or we found a way to the end
             bool foundSolution = false;
             while (frontier.Count > 0 && !foundSolution) {
@@ -308,7 +320,7 @@ public sealed class PlatformingProfiler : EditorWindow
                 frontier.Add(Tuple.Create(forwardPathTreeNode, stub));
                 forwardPath.RemoveAt(forwardPath.Count - 1); //Pop last frame since it will be of different state
 
-                Debug.Log(forwardPath[0].pos + " => " + forwardPath[forwardPath.Count - 1].pos);
+                if(showDebugData) Debug.Log(forwardPath[0].pos + " => " + forwardPath[forwardPath.Count - 1].pos);
 
                 if (parent != null)
                 {
@@ -318,7 +330,7 @@ public sealed class PlatformingProfiler : EditorWindow
                         //Raycast to find where we expect to land
                         Vector2 expectedLandingPosition = playerCast(ledge.pos, Physics2D.gravity.normalized*jumpLedgeProbing).point;
                         Vector2 expectedStartingPosition = parent.data[parent.data.Count-1].pos + (expectedLandingPosition - stub.pos);
-                        Debug.Log("Ledge at "+expectedLandingPosition);
+                        if(showDebugData) Debug.Log("Ledge at "+expectedLandingPosition);
                         int pivot = 0;
                         //Start with pivot as closest point to our predicted start point
                         {
@@ -351,12 +363,12 @@ public sealed class PlatformingProfiler : EditorWindow
                                 SimulateForward(c, ref backtrackedPath,
                                     (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
                                                   || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
-                                                  || (Mathf.Sign(vCur.pos.y-stub.pos.y) != Mathf.Sign(vPrev.pos.y-stub.pos.y) && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
+                                                  || (vCur.pos.y < stub.pos.y && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
                                     (v) => true
                                 );
 
                                 Vector2 status = backtrackedPath[backtrackedPath.Count-1].pos - expectedLandingPosition;
-                                Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos+" // status = "+status.x);
+                                if(showDebugData) Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos+" // status = "+status.x);
 
                                 //FIXME bad practice, find a better comparison
                                 if (status.x < 0) bsMin = pivot; //delta-X is negative, we undershot
@@ -366,9 +378,11 @@ public sealed class PlatformingProfiler : EditorWindow
                                 if (bsMax - bsMin > 1) pivot = (bsMin+bsMax) / 2;
 
                             } while (bsMax-bsMin > 1); //1 frame accuracy
-                            Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
+                            if(showDebugData) Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
                         }
                         backtrackedPath.TrimExcess();
+
+                        //TODO repeat with parent's parent if pivot=0
                         
                         //Merge head into parent
                         //Split(parent, pivot); //FIXME breaks everything by allowing empty list
@@ -382,6 +396,10 @@ public sealed class PlatformingProfiler : EditorWindow
                 //TODO path merging/pruning here as well?
             }
 
+            simulationTimeTaken.Stop();
+            long microseconds = simulationTimeTaken.ElapsedTicks / (System.Diagnostics.Stopwatch.Frequency / (1000L*1000L));
+            if(showDebugData) Debug.Log("Finished simulating in "+(microseconds/1000.0f)+"ms");
+
             //Render all
             pathsTree.Traverse(path =>
             {
@@ -393,18 +411,21 @@ public sealed class PlatformingProfiler : EditorWindow
                 for (float i = 0; i < path.data.Count; i += timeLabelResolution / timeResolution) Handles.Label(path.data[(int)i].pos, path.data[(int)i].time.ToString("n2") + "s");
 
                 //Render head to show forking
-                Handles.color = Color.yellow;
-                Handles.DrawWireCube(path.data[0].pos, Vector3.one * 0.05f);
+                if (showDebugData)
+                {
+                    Handles.color = Color.yellow;
+                    Handles.DrawWireCube(path.data[0].pos, Vector3.one * 0.05f);
+                }
 
                 //Render ledge debug data
-                foreach(SimulatedPathFrame ledge in path.data.Where(x => x.ledge != SimulatedPathFrame.LedgeType.None))
+                if (showDebugData) foreach (SimulatedPathFrame ledge in path.data.Where(x => x.ledge != SimulatedPathFrame.LedgeType.None))
                 {
                     if(ledge.ledge == SimulatedPathFrame.LedgeType.Rising ) Handles.color = Color.cyan;
                     if(ledge.ledge == SimulatedPathFrame.LedgeType.Falling) Handles.color = Color.red;
                     Handles.DrawWireCube(ledge.pos, Vector3.one * 0.15f);
                 }
             });
-            Debug.Log("========");
+            if(showDebugData) Debug.Log("========");
 
             CastFunc cast = GetCastFunc(character.gameObject);
             

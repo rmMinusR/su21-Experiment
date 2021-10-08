@@ -23,8 +23,6 @@ public sealed class PlayerHost : MonoBehaviour
         baseMovement = GetComponent<BaseMovementAction>();
         Debug.Assert(baseMovement != null);
 
-        context.owner = this;
-
         _rb = GetComponent<Rigidbody2D>();
 
         Debug.Assert(anim != null);
@@ -43,48 +41,29 @@ public sealed class PlayerHost : MonoBehaviour
 
     #endregion
 
-    [Serializable]
-    public struct Context
-    {
-        public PlayerHost owner;
+    //Ground checking
+    [SerializeField] [InspectorReadOnly] private float _lastGroundTime = -1000;
+    public float GroundRatio => 1 - Mathf.Clamp01((time.stable - _lastGroundTime) / ghostJumpTime);
+    public bool IsGrounded => time.stable < _lastGroundTime + ghostJumpTime;
+    public bool IsFullyGrounded => time.stable <= ghostJumpTime; //TODO does it need epsilon???
+    public void MarkUngrounded() => _lastGroundTime = -1000;
+    public void MarkGrounded() => _lastGroundTime = time.stable;
 
-        public Context(PlayerHost owner)
-        {
-            this.owner = owner;
-            
-            _lastGroundTime = -1000;
-            _surfaceUp = Vector2.up;
-            lastKnownFlattest = null;
-
-            input = new InputParam();
-            time = new TimeParam();
-            facing = Facing.Right;
-        }
-
-        //Ground checking
-        [SerializeField] private float _lastGroundTime;
-        public float GroundRatio => 1 - Mathf.Clamp01((time.stable - _lastGroundTime) / owner.ghostJumpTime);
-        public bool IsGrounded => time.stable < _lastGroundTime + owner.ghostJumpTime;
-        public bool IsFullyGrounded => time.stable <= owner.ghostJumpTime; //TODO does it need epsilon???
-        public void MarkUngrounded() => _lastGroundTime = -1000;
-        public void MarkGrounded() => _lastGroundTime = time.stable;
-
-        //Surface-local motion
-        [SerializeField] private Vector2 _surfaceUp;
-        public Vector2 surfaceUp { get => _surfaceUp; set => _surfaceUp = value; }
-        public Vector2 surfaceRight => new Vector2(surfaceUp.y, -surfaceUp.x);
-        public Matrix4x4 surfaceToGlobal => new Matrix4x4(surfaceRight, surfaceUp, new Vector4(0, 0, 1, 0), new Vector4(0, 0, 0, 1));
+    //Surface-local motion
+    [SerializeField] private Vector2 _surfaceUp;
+    public Vector2 surfaceUp { get => _surfaceUp; set => _surfaceUp = value; }
+    public Vector2 surfaceRight => new Vector2(surfaceUp.y, -surfaceUp.x);
+    public Matrix4x4 surfaceToGlobal => new Matrix4x4(surfaceRight, surfaceUp, new Vector4(0, 0, 1, 0), new Vector4(0, 0, 0, 1));
 
 
-        //Live, un-delayed surface motion
-        public Contact? lastKnownFlattest;
-        public float CurrentSurfaceAngle(float time) => IsGrounded ? lastKnownFlattest?.angle ?? 0 : 0;
+    //Live, un-delayed surface motion
+    public Contact? lastKnownFlattest;
+    public float CurrentSurfaceAngle(float time) => IsGrounded ? lastKnownFlattest?.angle ?? 0 : 0;
 
-        //Params most relevant to basic function
-        public InputParam input;
-        public TimeParam time;
-        public Facing facing;
-    }
+    //Params most relevant to basic function
+    public InputParam input;
+    public TimeParam time;
+    public Facing facing;
 
     public Mutex<IAction> casting = new Mutex<IAction>();
     public Mutex<IAction> moving  = new Mutex<IAction>();
@@ -129,10 +108,10 @@ public sealed class PlayerHost : MonoBehaviour
         if (flattest.HasValue)
         {
             //Do ground check
-            if (ClimbOverride.Process(CanClimb(flattest.Value), flattest.Value.contact.collider.gameObject)) context.MarkGrounded();
+            if (ClimbOverride.Process(CanClimb(flattest.Value), flattest.Value.contact.collider.gameObject)) MarkGrounded();
 
             //Copy data for normals etc
-            context.lastKnownFlattest = flattest.Value;
+            lastKnownFlattest = flattest.Value;
         }
 
         //Reset for next frame
@@ -182,45 +161,40 @@ public sealed class PlayerHost : MonoBehaviour
 
     #endregion
 
-    public Context context;
-
     void FixedUpdate()
     {
         _DoGroundCheck();
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.ExecMode.Live);
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity, IAction.ExecMode.Live);
     }
 
     private void _UpdateContext()
     {
-        context.time.delta = Time.fixedDeltaTime;
-        context.time.active += context.time.delta;
-        context.time.stable += context.time.delta;
-        context.input.global = controlMovement.ReadValue<Vector2>();
-        context.input.local = context.surfaceToGlobal.inverse.MultiplyVector(context.input.global);
-        context.input.jump = controlJump.ReadValue<float>() > 0.5f;
+        time.delta = Time.fixedDeltaTime;
+        time.stable += time.delta;
+        input.global = controlMovement.ReadValue<Vector2>();
+        input.local = surfaceToGlobal.inverse.MultiplyVector(input.global);
+        input.jump = controlJump.ReadValue<float>() > 0.5f;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
+    public Vector2 DoPhysicsUpdate(Vector2 velocity, IAction.ExecMode mode)
     {
         //Update local up axis
-        context.surfaceUp = Vector3.Slerp(
-                context.surfaceUp,
-                Vector3.Slerp(-Physics2D.gravity, context.lastKnownFlattest?.contact.normal ?? -Physics2D.gravity, context.GroundRatio),
-                1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
+        surfaceUp = Vector3.Slerp(
+                surfaceUp,
+                Vector3.Slerp(-Physics2D.gravity, lastKnownFlattest?.contact.normal ?? -Physics2D.gravity, GroundRatio),
+                1 - Mathf.Pow(1 - localMotionFalloff, time.delta)
             ).normalized;
 
         //Basic movement
-        Events.BasicMoveEvent basicMoveEvent = new Events.BasicMoveEvent();
-        EventBus.Instance.DispatchEvent(basicMoveEvent);
-        if(!basicMoveEvent.isCancelled) velocity += baseMovement.DoPhysics(ref context, velocity, mode);
+        velocity += baseMovement.DoPhysics(this, velocity, mode);
         
         //Special movement
-        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this);
+        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, velocity);
         EventBus.Instance.DispatchEvent(moveQuery);
-        if(!moveQuery.isCancelled) velocity += moveQuery.movement;
+        if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
 
         return velocity;
     }
@@ -228,7 +202,7 @@ public sealed class PlayerHost : MonoBehaviour
     private void OnDrawGizmos()
     {
         //Show debug surface lines
-        Gizmos.color = Color.red;   Gizmos.DrawLine(transform.position, transform.position + (Vector3)context.surfaceRight);
-        Gizmos.color = Color.green; Gizmos.DrawLine(transform.position, transform.position + (Vector3)context.surfaceUp   );
+        Gizmos.color = Color.red;   Gizmos.DrawLine(transform.position, transform.position + (Vector3)surfaceRight);
+        Gizmos.color = Color.green; Gizmos.DrawLine(transform.position, transform.position + (Vector3)surfaceUp   );
     }
 }

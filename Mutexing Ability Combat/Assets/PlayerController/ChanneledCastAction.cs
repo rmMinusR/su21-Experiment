@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ChanneledCastAction : IAction
+public class ChanneledCastAction : ICastableAbility
 {
     private InputAction controlActivate;
     private void Awake()
@@ -20,18 +20,18 @@ public class ChanneledCastAction : IAction
     //TODO fix
     [SerializeField] private float nextTimeCastable;
     [SerializeField] private bool isGood = false;
-    [SerializeField] private PlayerUIDriver.AbilityEndReason exitReason;
+    [SerializeField] private Events.AbilityEndEvent.Reason exitReason;
 
-    public bool AllowEntry(in PlayerHost.Context context) => controlActivate.ReadValue<float>() > 0.5f && nextTimeCastable < context.time.stable;
+    public bool AllowEntry(in PlayerHost context) => controlActivate.ReadValue<float>() > 0.5f && nextTimeCastable < context.time.stable;
 
-    public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode)
+    public void DoSetup(PlayerHost context, IAction prev, IAction.ExecMode mode)
     {
-        context.owner.anim.PlayAnimation(animCastBegin, immediately: true);
-        context.owner.anim.PlayAnimation(animCastLoop, immediately: false);
-        activeUntil = context.time.active + animCastBegin.length;
-        context.owner.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
+        context.anim.PlayAnimation(animCastBegin, immediately: true);
+        context.anim.PlayAnimation(animCastLoop, immediately: false);
+        activeUntil = context.time.stable + animCastBegin.length;
+        context.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
         isGood = true;
-        exitReason = PlayerUIDriver.AbilityEndReason.CastTimeEnded;
+        exitReason = Events.AbilityEndEvent.Reason.CastTimeEnded;
         nextTimeCastable = context.time.stable + maxChannelTime + cooldown; //Prevent accidental looping
     }
 
@@ -43,7 +43,7 @@ public class ChanneledCastAction : IAction
     //FIXME bad practice, DoPhysics is supposed to be stateless
     [SerializeField] private float activeUntil = 0;
 
-    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
@@ -52,20 +52,21 @@ public class ChanneledCastAction : IAction
 
         if (controlActivate.ReadValue<float>() < 0.5f)
         {
-            exitReason = PlayerUIDriver.AbilityEndReason.Cancelled;
+            exitReason = Events.AbilityEndEvent.Reason.Cancelled;
             isGood = false;
         }
 
-        if(isGood) activeUntil = Mathf.Min(context.time.active + castEndLag, maxChannelTime);
+        if(isGood) activeUntil = Mathf.Min(context.time.stable + castEndLag, maxChannelTime);
 
         return velocity;
     }
 
-    public bool AllowExit(in PlayerHost.Context context) => context.time.active >= activeUntil;
+    public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode)
+    public void DoCleanup(PlayerHost context, IAction next, IAction.ExecMode mode)
     {
-        context.owner.ui.ClearCurrentAbility(exitReason);
+        //context.ui.ClearCurrentAbility(exitReason);
+        EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(exitReason));
         nextTimeCastable = context.time.stable + cooldown;
     }
 }

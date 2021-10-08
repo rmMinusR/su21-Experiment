@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class AttackAction : IAction
+public class AttackAction : ICastableAbility
 {
     private InputAction controlActivate;
     private void Awake()
@@ -14,21 +14,21 @@ public class AttackAction : IAction
     [SerializeField] private AnimationClip[] attackAnimsGrounded;
     [SerializeField] private AnimationClip[] attackAnimsAirborne;
 
-    private void _Play(PlayerHost.Context context, int ind)
+    private void _Play(PlayerHost context, int ind)
     {
         AnimationClip toPlay = context.IsGrounded ? attackAnimsGrounded[ind] : attackAnimsAirborne[ind];
-        context.owner.anim.PlayAnimation(toPlay, immediately: true);
-        activeUntil = context.time.active + toPlay.length;
+        context.anim.PlayAnimation(toPlay, immediately: true);
+        activeUntil = context.time.stable + toPlay.length;
     }
 
-    public bool AllowEntry(in PlayerHost.Context context)
+    public bool AllowEntry(in PlayerHost context)
     {
         bool hasInput = inputBuffer;
         inputBuffer = false;
         return hasInput;
     }
 
-    public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode)
+    public void DoSetup(PlayerHost context, IAction prev, IAction.ExecMode mode)
     {
         //Play animation
         if (mode == IAction.ExecMode.Live)
@@ -58,7 +58,7 @@ public class AttackAction : IAction
     public void OnAttack() { if(acceptingInput) inputBuffer = true; }
 
     //Read buffered input and act
-    private void ProcessBufferedInput(PlayerHost.Context context)
+    private void ProcessBufferedInput(PlayerHost context)
     {
         if(inputBuffer && allowTransition)
         {
@@ -70,7 +70,7 @@ public class AttackAction : IAction
         }
     }
 
-    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
@@ -82,9 +82,9 @@ public class AttackAction : IAction
         return velocity;
     }
 
-    public bool AllowExit(in PlayerHost.Context context) => context.time.active >= activeUntil;
+    public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode)
+    public void DoCleanup(PlayerHost context, IAction next, IAction.ExecMode mode)
     {
         acceptingInput = true;
 

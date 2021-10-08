@@ -1,68 +1,23 @@
 ﻿using System;
 using UnityEngine;
 
-/// <summary>
-/// Scripts that take control of movement should implement this for mutual exclusion safety with Rigidbody.
-/// </summary>
-public abstract class IAction : MonoBehaviour
+public abstract class IAction : ScopedEventListener
 {
-    public enum ExecMode
+    public enum ExecMode //TODO remove
     {
         Live,
-        LiveDelegated, //TODO IMPLEMENT
+        LiveDelegated,
         SimulatePath,
         SimulateCurves
     }
 
+    public abstract Sprite GetIcon();
+    public abstract string GetName();
 }
 
-[Serializable]
-public sealed class Mutex<T> where T : class
+public abstract class ICastableAbility : IAction
 {
-    private T _owner;
-    public T Owner => _owner;
-    public bool isClaimed => _owner != null;
-
-    public OwnedMutex<T> Claim(T byWho)
-    {
-        if (!isClaimed)
-        {
-            _owner = byWho;
-            return new OwnedMutex<T>(this);
-        }
-        else throw new InvalidOperationException();
-    }
-
-    public void Release(OwnedMutex<T> by, bool force = false)
-    {
-        if (isClaimed && (Owner == by.Owner || force))
-        {
-            _owner = null;
-            by.Invalidate();
-        }
-        else throw new InvalidOperationException();
-    }
-}
-
-[Serializable]
-public sealed class OwnedMutex<T> where T : class
-{
-    [SerializeField] [HideInInspector] private Mutex<T> mutex;
-    [SerializeField] private T _owner;
-    public T Owner => _owner;
-
-    public OwnedMutex(Mutex<T> mutex)
-    {
-        this.mutex = mutex;
-    }
-
-    public void Release()
-    {
-        mutex.Release(this);
-        Invalidate();
-    }
-
-    public void Invalidate() => mutex = null;
+    public abstract bool ShowCastingUI(PlayerUIDriver ui);
 }
 
 public enum Facing
@@ -86,7 +41,6 @@ public static class FacingExt
 public struct TimeParam
 {
     public float stable;
-    public float active;
     public float delta;
 }
 

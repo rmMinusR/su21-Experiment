@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerAnimationDriver : MonoBehaviour
 {
-    [SerializeField] private PlayerHost common;
+    [SerializeField] private PlayerHost context;
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer playerSprite;
 
@@ -11,7 +11,7 @@ public class PlayerAnimationDriver : MonoBehaviour
 
     private void Start()
     {
-        Debug.Assert(common != null);
+        Debug.Assert(context != null);
         Debug.Assert(animator != null);
         Debug.Assert(playerSprite != null);
     }
@@ -34,7 +34,7 @@ public class PlayerAnimationDriver : MonoBehaviour
 
         //Do sprite flipping
         //Tmp is needed to detect changes
-        Facing tmpCurFacing = common.context.facing;
+        Facing tmpCurFacing = context.facing;
         if (tmpCurFacing != Facing.Agnostic)
         {
             currentFacing = tmpCurFacing;

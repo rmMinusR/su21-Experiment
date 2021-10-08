@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -33,6 +34,26 @@ public static class DataStructExt
 
         return val;
     }
+
+    public static WrappedIEnumerator<T> AsEnumerable<T>(this IEnumerator<T> e) => new WrappedIEnumerator<T>(e);
+}
+
+public class WrappedIEnumerator<T> : IEnumerable<T>
+{
+    private IEnumerator<T> enumerator;
+
+    public WrappedIEnumerator(IEnumerator<T> enumerator)
+    {
+        this.enumerator = enumerator;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        enumerator.Reset();
+        return enumerator;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 public static class RandomExt
@@ -134,4 +155,53 @@ public class NTree<T> : IEnumerable<NTree<T>>
         Traverse(x => vals.Add(x));
         return vals.GetEnumerator();
     }
+}
+
+[Serializable]
+public sealed class Mutex<T> where T : class
+{
+    private T _owner;
+    public T Owner => _owner;
+    public bool isClaimed => _owner != null;
+
+    public OwnedMutex<T> Claim(T byWho)
+    {
+        if (!isClaimed)
+        {
+            _owner = byWho;
+            return new OwnedMutex<T>(this);
+        }
+        else throw new InvalidOperationException();
+    }
+
+    public void Release(OwnedMutex<T> by, bool force = false)
+    {
+        if (isClaimed && (Owner == by.Owner || force))
+        {
+            _owner = null;
+            by.Invalidate();
+        }
+        else throw new InvalidOperationException();
+    }
+}
+
+[Serializable]
+public sealed class OwnedMutex<T> where T : class
+{
+    [SerializeField] [HideInInspector] private Mutex<T> mutex;
+    [SerializeField] private T _owner;
+    public T Owner => _owner;
+
+    public OwnedMutex(Mutex<T> mutex)
+    {
+        this.mutex = mutex;
+    }
+
+    public void Release()
+    {
+        mutex.Release(this);
+        Invalidate();
+    }
+
+    public void Invalidate() => mutex = null;
 }

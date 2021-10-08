@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerUIDriver : MonoBehaviour
+public class PlayerUIDriver : ScopedEventListener
 {
     private void Update()
     {
@@ -26,6 +27,8 @@ public class PlayerUIDriver : MonoBehaviour
     [SerializeField] [HideInInspector] private float abilityCastTimeCurrent;
     [SerializeField] [HideInInspector] private float abilityCastTimeMax;
 
+    private void SetCurrentAbility(ICastableAbility ability) => ability.ShowCastingUI(this);
+    
     public void SetCurrentAbility(Sprite icon, string name, float maxTime, float curTime = 0)
     {
         abilityUIContainer.SetActive(true);
@@ -36,18 +39,12 @@ public class PlayerUIDriver : MonoBehaviour
         abilityProgressBar.fillAmount = curTime / maxTime;
     }
 
-    public enum AbilityEndReason
-    {
-        None,
-        CastTimeEnded,
-        Cancelled,
-        Interrupted
-    }
+    
 
-    public void ClearCurrentAbility(AbilityEndReason reason)
+    public void ClearCurrentAbility(Events.AbilityEndEvent.Reason reason, bool showMessage)
     {
         abilityCastTimeMax = 0;
-        if(reason != AbilityEndReason.None) ShowMessage(reason.ToString());
+        if(showMessage) ShowMessage(reason.ToString());
     }
 
     [Header("Messages")]
@@ -60,5 +57,17 @@ public class PlayerUIDriver : MonoBehaviour
         TextMessage obj = Instantiate(messagePrefab.gameObject, messageSource.position, messageSource.rotation).GetComponent<TextMessage>();
         obj.uiText.text = message;
         obj.lifetime = messageLife;
+    }
+
+    protected override IEnumerator<Type> GetListenedEventTypes()
+    {
+        yield return typeof(Events.AbilityStartEvent);
+        yield return typeof(Events.AbilityEndEvent);
+    }
+
+    public override void OnRecieveEvent(Event e)
+    {
+        if(e is Events.AbilityStartEvent eStart) SetCurrentAbility(eStart.ability);
+        if(e is Events.AbilityEndEvent eEnd) ClearCurrentAbility(eEnd.reason, eEnd.showMessage);;
     }
 }

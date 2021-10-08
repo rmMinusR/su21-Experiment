@@ -4,9 +4,6 @@ using UnityEngine;
 
 public sealed class BaseMovementAction : IAction
 {
-    public bool AllowEntry(in PlayerHost.Context context) => false; //Prevent accidentally entering as activeMovementAction
-    public bool AllowExit(in PlayerHost.Context context) => true;
-
     //Params
     [Header("Movement controls")]
     [Min(0)] public float moveSpeed;
@@ -26,16 +23,13 @@ public sealed class BaseMovementAction : IAction
     [Header("Animations")]
     [SerializeField] private AnimationClip[] anims;
 
-    public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode) { }
-    public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode) { }
-
-    public void _ApplyGravity(PlayerHost.Context context, ref Vector2 velocity)
+    public void _ApplyGravity(PlayerHost context, ref Vector2 velocity)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
     }
 
-    public void _ApplyStaticFriction(PlayerHost.Context context, ref Vector2 velocity, float input)
+    public void _ApplyStaticFriction(PlayerHost context, ref Vector2 velocity, float input)
     {
         //Snappiness thresholding
         if(context.GroundRatio > 0.05f) {
@@ -49,7 +43,7 @@ public sealed class BaseMovementAction : IAction
         }
     }
 
-    public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
     {
         _ApplyGravity(context, ref velocity);
 
@@ -88,13 +82,13 @@ public sealed class BaseMovementAction : IAction
         {
             float vx = velocity.x/moveSpeed;
             context.facing = FacingExt.Detect(vx, 0.05f);
-            context.owner.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
+            context.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
         }
 
         return velocity;
     }
 
-    public Vector2 _ApplySurfaceSticking(PlayerHost.Context context)
+    public Vector2 _ApplySurfaceSticking(PlayerHost context)
     {
         if (context.lastKnownFlattest.HasValue)
         {

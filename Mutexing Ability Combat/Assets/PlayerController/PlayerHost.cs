@@ -65,13 +65,13 @@ public sealed class PlayerHost : MonoBehaviour
     public TimeParam time;
     public Facing facing;
 
-    public Mutex<IAction> casting = new Mutex<IAction>();
-    public Mutex<IAction> moving  = new Mutex<IAction>();
+    public Mutex<IAbility> casting = new Mutex<IAbility>();
+    public Mutex<IAbility> moving  = new Mutex<IAbility>();
 
     #region Ground/ceiling checking
 
     [Header("Ground checking")]
-    [SerializeField] [Range(0, 180)]   private float __maxGroundAngle;            public float maxGroundAngle => __maxGroundAngle;
+    [SerializeField] [Range(0, 180)]   private float __maxGroundAngle;           public float maxGroundAngle => __maxGroundAngle;
     [SerializeField] [Min(0.01f)]      private float _ghostJumpTime = 0.05f;     public float ghostJumpTime  => _ghostJumpTime;
 
     [Header("Sloped-surface motion")]
@@ -167,7 +167,7 @@ public sealed class PlayerHost : MonoBehaviour
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, IAction.ExecMode.Live);
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity, IAbility.ExecMode.Live); //TODO make manual again
     }
 
     private void _UpdateContext()
@@ -179,7 +179,7 @@ public sealed class PlayerHost : MonoBehaviour
         input.jump = controlJump.ReadValue<float>() > 0.5f;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysicsUpdate(Vector2 velocity, IAbility.ExecMode mode)
     {
         //Update local up axis
         surfaceUp = Vector3.Slerp(
@@ -195,6 +195,9 @@ public sealed class PlayerHost : MonoBehaviour
         Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, velocity);
         EventBus.Instance.DispatchEvent(moveQuery);
         if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
+
+        Events.KinematicsEvent kinematicsEvent = new Events.KinematicsEvent(transform.position, velocity);
+        EventBus.Instance.DispatchEvent(kinematicsEvent);
 
         return velocity;
     }

@@ -24,7 +24,7 @@ public class ChanneledCastAction : ICastableAbility
 
     public bool AllowEntry(in PlayerHost context) => controlActivate.ReadValue<float>() > 0.5f && nextTimeCastable < context.time.stable;
 
-    public void DoSetup(PlayerHost context, IAction prev, IAction.ExecMode mode)
+    public void DoSetup(PlayerHost context, IAbility prev, IAbility.ExecMode mode)
     {
         context.anim.PlayAnimation(animCastBegin, immediately: true);
         context.anim.PlayAnimation(animCastLoop, immediately: false);
@@ -43,7 +43,7 @@ public class ChanneledCastAction : ICastableAbility
     //FIXME bad practice, DoPhysics is supposed to be stateless
     [SerializeField] private float activeUntil = 0;
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
@@ -63,7 +63,7 @@ public class ChanneledCastAction : ICastableAbility
 
     public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(PlayerHost context, IAction next, IAction.ExecMode mode)
+    public void DoCleanup(PlayerHost context, IAbility next, IAbility.ExecMode mode)
     {
         //context.ui.ClearCurrentAbility(exitReason);
         EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(exitReason));

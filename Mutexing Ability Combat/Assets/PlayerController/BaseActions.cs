@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public abstract class IAction : ScopedEventListener
+public abstract class IAbility : ScopedEventListener
 {
     public enum ExecMode //TODO remove
     {
@@ -15,7 +15,7 @@ public abstract class IAction : ScopedEventListener
     public abstract string GetName();
 }
 
-public abstract class ICastableAbility : IAction
+public abstract class ICastableAbility : IAbility
 {
     public abstract bool ShowCastingUI(PlayerUIDriver ui);
 }

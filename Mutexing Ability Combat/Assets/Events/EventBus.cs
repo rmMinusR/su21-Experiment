@@ -1,6 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Priority_Queue;
+
+namespace Events
+{
+    public enum Priority
+    {
+        Highest = 0,
+        High = 1,
+        Normal = 2,
+        Low = 3,
+        Lowest = 4
+    }
+}
 
 public sealed class EventBus : MonoBehaviour
 {
@@ -24,13 +37,14 @@ public sealed class EventBus : MonoBehaviour
 
     #region Listeners
 
-    private Dictionary<System.Type, HashSet<IEventListener>> listeners;
+    private Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> _listeners;
+    private Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> listeners => _listeners != null ? _listeners : (_listeners = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>());
 
-    public void AddListener(IEventListener listener, System.Type eventType) => listeners.GetOrCreate(eventType).Add(listener);
+    public void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority) => listeners.GetOrCreate(eventType).Enqueue(listener, priority);
     public void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].Remove(listener);
     public void RemoveListenerFromAll(IEventListener listener)
     {
-        foreach(HashSet<IEventListener> i in listeners.Values) i.Remove(listener);
+        foreach(SimplePriorityQueue<IEventListener, Events.Priority> i in listeners.Values) i.Remove(listener);
     }
 
     #endregion
@@ -55,7 +69,7 @@ public abstract class ScopedEventListener : MonoBehaviour, IEventListener
     protected virtual void OnEnable()
     {
         IEnumerator<System.Type> types = GetListenedEventTypes();
-        while(types.MoveNext()) EventBus.Instance.AddListener(this, types.Current);
+        while(types.MoveNext()) EventBus.Instance.AddListener(this, types.Current, Events.Priority.Normal);
     }
 
     protected virtual void OnDisable()

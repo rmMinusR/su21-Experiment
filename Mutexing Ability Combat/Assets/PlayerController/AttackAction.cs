@@ -28,10 +28,10 @@ public class AttackAction : ICastableAbility
         return hasInput;
     }
 
-    public void DoSetup(PlayerHost context, IAction prev, IAction.ExecMode mode)
+    public void DoSetup(PlayerHost context, IAbility prev, IAbility.ExecMode mode)
     {
         //Play animation
-        if (mode == IAction.ExecMode.Live)
+        if (mode == IAbility.ExecMode.Live)
         {
             inputBuffer = false;
             swingCounter = 0;
@@ -70,21 +70,21 @@ public class AttackAction : ICastableAbility
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
 
         velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
 
-        if (mode == IAction.ExecMode.Live) ProcessBufferedInput(context);
+        if (mode == IAbility.ExecMode.Live) ProcessBufferedInput(context);
 
         return velocity;
     }
 
     public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(PlayerHost context, IAction next, IAction.ExecMode mode)
+    public void DoCleanup(PlayerHost context, IAbility next, IAbility.ExecMode mode)
     {
         acceptingInput = true;
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class BaseMovementAction : IAction
+public sealed class BaseMovementAction : IAbility
 {
     //Params
     [Header("Movement controls")]
@@ -43,27 +43,27 @@ public sealed class BaseMovementAction : IAction
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
     {
         _ApplyGravity(context, ref velocity);
 
         //Get user input
         //TODO switch to context.input.local?
         float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
-        if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
+        if(mode == IAbility.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != IAction.ExecMode.SimulateCurves) velocity += _ApplySurfaceSticking(context);
+        if(mode != IAbility.ExecMode.SimulateCurves) velocity += _ApplySurfaceSticking(context);
 
         //Velocity to local space
-        Vector2 localVelocity = (mode==IAction.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = (mode==IAbility.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
 
-        if(mode != IAction.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
+        if(mode != IAbility.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
 
         //Transform back to global space
-        velocity = (mode<=IAction.ExecMode.LiveDelegated) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = (mode<=IAbility.ExecMode.LiveDelegated) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
@@ -75,10 +75,10 @@ public sealed class BaseMovementAction : IAction
             context.MarkUngrounded();
         }
 
-        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
+        if (mode <= IAbility.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
 
         //Write for AnimationDriver
-        if (mode == IAction.ExecMode.Live)
+        if (mode == IAbility.ExecMode.Live)
         {
             float vx = velocity.x/moveSpeed;
             context.facing = FacingExt.Detect(vx, 0.05f);

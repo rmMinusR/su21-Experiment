@@ -19,25 +19,18 @@ public class ChanneledCastAction : ICastableAbility
     [SerializeField] private AnimationClip animCastLoop;
 
     [SerializeField] [Min(0)] private float maxChannelTime = 3.5f;
-    [SerializeField] [Min(0)] private float castEndLag = 0.5f;
     [SerializeField] [Min(0)] private float cooldown = 2.0f;
 
-    //TODO beautify
-    [SerializeField] private float nextTimeCastable;
-    [SerializeField] private bool isGood = false;
-    [SerializeField] private Events.AbilityEndEvent.Reason exitReason;
+    public override bool ShouldStart() => controlActivate.ReadAsButton() && nextTimeCastable < host.time.stable;
 
-    public bool AllowEntry(in PlayerHost context) => controlActivate.ReadValue<float>() > 0.5f && nextTimeCastable < context.time.stable;
-
-    public void DoSetup(PlayerHost context)
+    public override void DoStartCast()
     {
-        context.anim.PlayAnimation(animCastBegin, immediately: true);
-        context.anim.PlayAnimation(animCastLoop, immediately: false);
-        activeUntil = context.time.stable + animCastBegin.length;
-        context.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
+        host.anim.PlayAnimation(animCastBegin, immediately: true);
+        host.anim.PlayAnimation(animCastLoop, immediately: false);
+        host.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
+        exitReason = Events.AbilityEndEvent.Reason.Interrupted;
         isGood = true;
-        exitReason = Events.AbilityEndEvent.Reason.CastTimeEnded;
-        nextTimeCastable = context.time.stable + maxChannelTime + cooldown; //Prevent accidental looping
+        channelStartTime = host.time.stable;
     }
 
     [Header("For animator")]
@@ -45,33 +38,40 @@ public class ChanneledCastAction : ICastableAbility
     [SerializeField] [Range(0, 1)] private float overrideSmoothing;
 
     [Header("State data")]
-    //FIXME bad practice, DoPhysics is supposed to be stateless
-    [SerializeField] private float activeUntil = 0;
+    [SerializeField] private float nextTimeCastable; //Cooldowns
+    [SerializeField] private float channelStartTime; //Limit channel time
+    [SerializeField] private bool isGood = false;
+    [SerializeField] private Events.AbilityEndEvent.Reason exitReason;
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
+    public override void DoWhileCasting()
+    {
+        if (!controlActivate.ReadAsButton())
+        {
+            exitReason = Events.AbilityEndEvent.Reason.Cancelled;
+            isGood = false;
+        }
+        else if (host.time.stable > maxChannelTime + channelStartTime)
+        {
+            exitReason = Events.AbilityEndEvent.Reason.CastTimeEnded;
+            isGood = false;
+        }
+    }
+
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity) //TODO fixme
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
 
         velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
 
-        if (controlActivate.ReadValue<float>() < 0.5f)
-        {
-            exitReason = Events.AbilityEndEvent.Reason.Cancelled;
-            isGood = false;
-        }
-
-        if(isGood) activeUntil = Mathf.Min(context.time.stable + castEndLag, maxChannelTime);
-
         return velocity;
     }
 
-    public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
+    public override bool ShouldEnd() => !isGood;
 
-    public void DoCleanup(PlayerHost context)
+    public override void DoEndCast()
     {
-        //context.ui.ClearCurrentAbility(exitReason);
-        EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(exitReason));
-        nextTimeCastable = context.time.stable + cooldown;
+        EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
+        nextTimeCastable = host.time.stable + cooldown;
     }
 }

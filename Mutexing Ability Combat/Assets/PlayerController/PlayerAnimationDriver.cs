@@ -49,10 +49,14 @@ public class PlayerAnimationDriver : MonoBehaviour
 
     public void PlayAnimation(AnimationClip anim, bool immediately = false)
     {
-        if (immediately && anim != currentlyPlaying)
+        if (immediately)
         {
-            buffer.Clear();
-            currentTimeLeft = 0;
+            if (anim != currentlyPlaying)
+            {
+                buffer.Clear();
+                currentTimeLeft = 0;
+            }
+            else if(buffer.Count > 1) buffer.RemoveRange(1, buffer.Count - 1);
         }
         buffer.Add(anim);
     }

@@ -205,3 +205,8 @@ public sealed class OwnedMutex<T> where T : class
 
     public void Invalidate() => mutex = null;
 }
+
+public static class InputExt
+{
+    public static bool ReadAsButton(this UnityEngine.InputSystem.InputAction input) => input.ReadValue<float>() > 0.5f;
+}

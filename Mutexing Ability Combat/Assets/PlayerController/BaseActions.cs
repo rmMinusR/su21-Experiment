@@ -12,9 +12,7 @@ public abstract class IAbility : ScopedEventListener
 
 public abstract class ICastableAbility : IAbility
 {
-    //public abstract bool ShowCastingUI(PlayerUIDriver ui);
-
-    [SerializeField] private bool _currentlyCasting = false;
+    [SerializeField] [InspectorReadOnly] private bool _currentlyCasting = false;
     protected bool CurrentlyCasting => _currentlyCasting;
 
     protected void FixedUpdate()

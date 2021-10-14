@@ -728,6 +728,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _currentlyCasting: 0
   attackAnimsGrounded:
   - {fileID: 7400000, guid: 531931d2db16fa846ada81d89afd18c4, type: 2}
   - {fileID: 7400000, guid: afde4ce1b3752e4449785212cf7ca970, type: 2}
@@ -802,22 +803,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   anim: {fileID: 607304557}
   ui: {fileID: 610204715}
+  _lastGroundTime: -1000
+  _surfaceUp: {x: 0, y: 0}
+  input:
+    global: {x: 0, y: 0}
+    local: {x: 0, y: 0}
+    jump: 0
+  time:
+    stable: 0
+    delta: 0
+  facing: 0
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
   _localMotionFalloff: 0.1
-  context:
-    owner: {fileID: 0}
-    _lastGroundTime: 0
-    _surfaceUp: {x: 0, y: 0}
-    input:
-      global: {x: 0, y: 0}
-      local: {x: 0, y: 0}
-      jump: 0
-    time:
-      stable: 0
-      active: 0
-      delta: 0
-    facing: 0
 --- !u!50 &607304555
 Rigidbody2D:
   serializedVersion: 4
@@ -867,7 +865,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbf9d28c2470c154187dd6ba0f8eeee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  common: {fileID: 607304554}
+  context: {fileID: 607304554}
   animator: {fileID: 607304559}
   playerSprite: {fileID: 607304558}
   currentFacing: 0
@@ -956,17 +954,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2723ef9b4a33f14c834c332422c100c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _currentlyCasting: 0
   animCastBegin: {fileID: 7400000, guid: d56aa644739eca64c9c9e7c5bb598907, type: 2}
   animCastLoop: {fileID: 7400000, guid: 5310b79e644d1be42a5a097933eb838e, type: 2}
   maxChannelTime: 3.5
-  castEndLag: 0.05
-  cooldown: 5
+  cooldown: 1
+  velocityOverride: {x: 0, y: 0}
+  overrideSmoothing: 0.5
   nextTimeCastable: 0
   isGood: 0
   exitReason: 0
-  velocityOverride: {x: 0, y: 0}
-  overrideSmoothing: 0.5
-  activeUntil: 0
 --- !u!1 &610204712
 GameObject:
   m_ObjectHideFlags: 0

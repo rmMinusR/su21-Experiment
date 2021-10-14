@@ -19,6 +19,7 @@ public sealed class EventBus : MonoBehaviour
     #region Singleton
 
     private static EventBus __Instance = null;
+    public static bool HasInstance => __Instance != null;
     public static EventBus Instance
     {
         get
@@ -39,11 +40,15 @@ public sealed class EventBus : MonoBehaviour
     private Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> _listeners;
     private Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> listeners => _listeners != null ? _listeners : (_listeners = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>());
 
-    public void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority) => listeners.GetOrCreate(eventType).Enqueue(listener, priority);
-    public void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].Remove(listener);
+    public void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority)
+    {
+        SimplePriorityQueue<IEventListener, Events.Priority> pq = listeners.GetOrCreate(eventType);
+        if(!pq.Contains(listener)) pq.Enqueue(listener, priority);
+    }
+    public void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].TryRemove(listener);
     public void RemoveListenerFromAll(IEventListener listener)
     {
-        foreach(SimplePriorityQueue<IEventListener, Events.Priority> i in listeners.Values) i.Remove(listener);
+        foreach(SimplePriorityQueue<IEventListener, Events.Priority> i in listeners.Values) i.TryRemove(listener);
     }
 
     #endregion
@@ -75,7 +80,7 @@ public abstract class ScopedEventListener : MonoBehaviour, IEventListener
 
     protected virtual void OnDisable()
     {
-        EventBus.Instance.RemoveListenerFromAll(this);
+        if(EventBus.HasInstance) EventBus.Instance.RemoveListenerFromAll(this);
     }
 
     protected abstract IEnumerator<System.Type> GetListenedEventTypes();
@@ -87,4 +92,9 @@ public abstract class ScopedEventListener : MonoBehaviour, IEventListener
 public abstract class Event
 {
     public bool isCancelled;
+
+    protected Event()
+    {
+        isCancelled = false;
+    }
 }

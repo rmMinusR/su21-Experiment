@@ -188,11 +188,8 @@ public sealed class PlayerHost : MonoBehaviour
                 1 - Mathf.Pow(1 - localMotionFalloff, time.delta)
             ).normalized;
 
-        //Basic movement
-        velocity += baseMovement.DoPhysics(this, velocity);
-        
-        //Special movement
-        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, velocity);
+        //Movement
+        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, baseMovement.DoPhysics(this, velocity));
         EventBus.Instance.DispatchEvent(moveQuery);
         if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
 

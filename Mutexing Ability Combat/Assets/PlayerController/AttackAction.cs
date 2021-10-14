@@ -26,19 +26,19 @@ public class AttackAction : ICastableAbility
         activeUntil = context.time.stable + toPlay.length;
     }
 
-    public bool AllowEntry(in PlayerHost context)
+    public override bool ShouldStart()
     {
         bool hasInput = inputBuffer;
         inputBuffer = false;
         return hasInput;
     }
 
-    public void DoSetup(PlayerHost context)
+    public override void DoStartCast()
     {
         //Play animation
         inputBuffer = false;
         swingCounter = 0;
-        _Play(context, 0);
+        _Play(host, 0);
         acceptingInput = false;
         allowTransition = false;
     }
@@ -54,21 +54,21 @@ public class AttackAction : ICastableAbility
     [SerializeField] private int swingCounter = 0;
     [SerializeField] private bool inputBuffer;
 
-    public bool CanAttack => acceptingInput; //TODO || context.casting.owner != this) && EventBus.Instance.DispatchEvent(new AbilityTryCastEvent());
+    public bool CanAttack => acceptingInput; //TODO || host.casting.owner != this) && EventBus.Instance.DispatchEvent(new AbilityTryCastEvent());
 
-    public void TryAttack()
+    public void OnAttack()
     {
         if(CanAttack) inputBuffer = true;
     }
 
     //Read buffered input and act
-    private void ProcessBufferedInput(PlayerHost context)
+    public override void DoWhileCasting()
     {
         if(inputBuffer && allowTransition)
         {
             inputBuffer = false;
-            swingCounter = (swingCounter + 1) % (context.IsGrounded ? attackAnimsGrounded.Length : attackAnimsAirborne.Length);
-            _Play(context, swingCounter);
+            swingCounter = (swingCounter + 1) % (host.IsGrounded ? attackAnimsGrounded.Length : attackAnimsAirborne.Length);
+            _Play(host, swingCounter);
             acceptingInput = false;
             allowTransition = false;
         }
@@ -81,17 +81,13 @@ public class AttackAction : ICastableAbility
 
         velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
 
-        ProcessBufferedInput(context);
-
         return velocity;
     }
 
-    public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
+    public override bool ShouldEnd() => host.time.stable >= activeUntil; //TODO check not playing? or that exit conditions in animator are met?
 
-    public void DoCleanup(PlayerHost context)
+    public override void DoEndCast()
     {
         acceptingInput = true;
-
-        //TODO check not playing? or that exit conditions in animator are met?
     }
 }

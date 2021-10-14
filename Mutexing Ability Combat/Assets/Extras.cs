@@ -58,7 +58,7 @@ public class WrappedIEnumerator<T> : IEnumerable<T>
 
 public static class RandomExt
 {
-    public static T Choice<T>(T[] src) where T : class => src.Length > 0 ? src[Random.Range(0, src.Length)] : null;
+    public static T Choice<T>(T[] src) where T : class => src.Length > 0 ? src[UnityEngine.Random.Range(0, src.Length)] : null;
 }
 
 public static class EditorExt

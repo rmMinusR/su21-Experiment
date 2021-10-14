@@ -27,8 +27,6 @@ public class PlayerUIDriver : ScopedEventListener
     [SerializeField] [HideInInspector] private float abilityCastTimeCurrent;
     [SerializeField] [HideInInspector] private float abilityCastTimeMax;
 
-    private void SetCurrentAbility(ICastableAbility ability) => ability.ShowCastingUI(this);
-    
     public void SetCurrentAbility(Sprite icon, string name, float maxTime, float curTime = 0)
     {
         abilityUIContainer.SetActive(true);
@@ -38,8 +36,6 @@ public class PlayerUIDriver : ScopedEventListener
         abilityCastTimeMax = maxTime;
         abilityProgressBar.fillAmount = curTime / maxTime;
     }
-
-    
 
     public void ClearCurrentAbility(Events.AbilityEndEvent.Reason reason, bool showMessage)
     {
@@ -67,7 +63,7 @@ public class PlayerUIDriver : ScopedEventListener
 
     public override void OnRecieveEvent(Event e)
     {
-        if(e is Events.AbilityStartEvent eStart) SetCurrentAbility(eStart.ability);
-        if(e is Events.AbilityEndEvent eEnd) ClearCurrentAbility(eEnd.reason, eEnd.showMessage);;
+        //if(e is Events.AbilityStartEvent eStart) SetCurrentAbility(eStart.ability); //TODO reimplement
+        if(e is Events.AbilityEndEvent eEnd) ClearCurrentAbility(eEnd.reason, eEnd.showMessage);
     }
 }

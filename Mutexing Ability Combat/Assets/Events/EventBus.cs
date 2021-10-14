@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Priority_Queue;
@@ -49,12 +48,14 @@ public sealed class EventBus : MonoBehaviour
 
     #endregion
 
-    public void DispatchEvent(Event e)
+    public Event DispatchEvent(Event e)
     {
         for(System.Type t = e.GetType(); t != typeof(object); t = t.BaseType)
         {
             if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t]) i.OnRecieveEvent(e);
         }
+
+        return e;
     }
 }
 

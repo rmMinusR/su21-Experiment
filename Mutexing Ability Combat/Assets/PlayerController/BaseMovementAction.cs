@@ -4,6 +4,10 @@ using UnityEngine;
 
 public sealed class BaseMovementAction : IAbility
 {
+    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    public override void OnRecieveEvent(Event e) { }
+    
+    
     //Params
     [Header("Movement controls")]
     [Min(0)] public float moveSpeed;
@@ -43,27 +47,27 @@ public sealed class BaseMovementAction : IAbility
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
     {
         _ApplyGravity(context, ref velocity);
 
         //Get user input
         //TODO switch to context.input.local?
         float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
-        if(mode == IAbility.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
+        context.facing = FacingExt.Detect(localInput, 0.05f);
 
-        if(mode != IAbility.ExecMode.SimulateCurves) velocity += _ApplySurfaceSticking(context);
+        velocity += _ApplySurfaceSticking(context);
 
         //Velocity to local space
-        Vector2 localVelocity = (mode==IAbility.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
 
-        if(mode != IAbility.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
+        _ApplyStaticFriction(context, ref localVelocity, localInput);
 
         //Transform back to global space
-        velocity = (mode<=IAbility.ExecMode.LiveDelegated) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
@@ -75,15 +79,12 @@ public sealed class BaseMovementAction : IAbility
             context.MarkUngrounded();
         }
 
-        if (mode <= IAbility.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
+        velocity = _ProcessFakeFriction(velocity);
 
         //Write for AnimationDriver
-        if (mode == IAbility.ExecMode.Live)
-        {
-            float vx = velocity.x/moveSpeed;
-            context.facing = FacingExt.Detect(vx, 0.05f);
-            context.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
-        }
+        float vx = velocity.x/moveSpeed;
+        context.facing = FacingExt.Detect(vx, 0.05f);
+        context.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
 
         return velocity;
     }

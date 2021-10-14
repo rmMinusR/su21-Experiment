@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class AttackAction : ICastableAbility
@@ -6,10 +8,13 @@ public class AttackAction : ICastableAbility
     private InputAction controlActivate;
     private void Awake()
     {
-        controlActivate = GetComponent<PlayerHost>().controlsMap.FindAction("Attack");
+        controlActivate = host.controlsMap.FindAction("Attack");
         //TODO bind callback
         Debug.Assert(controlActivate != null);
     }
+
+    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    public override void OnRecieveEvent(Event e) { }
 
     [SerializeField] private AnimationClip[] attackAnimsGrounded;
     [SerializeField] private AnimationClip[] attackAnimsAirborne;
@@ -28,17 +33,14 @@ public class AttackAction : ICastableAbility
         return hasInput;
     }
 
-    public void DoSetup(PlayerHost context, IAbility prev, IAbility.ExecMode mode)
+    public void DoSetup(PlayerHost context)
     {
         //Play animation
-        if (mode == IAbility.ExecMode.Live)
-        {
-            inputBuffer = false;
-            swingCounter = 0;
-            _Play(context, 0);
-            acceptingInput = false;
-            allowTransition = false;
-        }
+        inputBuffer = false;
+        swingCounter = 0;
+        _Play(context, 0);
+        acceptingInput = false;
+        allowTransition = false;
     }
 
     [Header("For animator")]
@@ -48,14 +50,16 @@ public class AttackAction : ICastableAbility
     [SerializeField] private bool allowTransition;
 
     [Header("State data")]
-    //FIXME bad practice, class is supposed to be stateless
     [SerializeField] private float activeUntil = 0;
     [SerializeField] private int swingCounter = 0;
     [SerializeField] private bool inputBuffer;
 
-    //To be called from Input component
-    //Buffers a button press
-    public void OnAttack() { if(acceptingInput) inputBuffer = true; }
+    public bool CanAttack => acceptingInput; //TODO || context.casting.owner != this) && EventBus.Instance.DispatchEvent(new AbilityTryCastEvent());
+
+    public void TryAttack()
+    {
+        if(CanAttack) inputBuffer = true;
+    }
 
     //Read buffered input and act
     private void ProcessBufferedInput(PlayerHost context)
@@ -70,21 +74,21 @@ public class AttackAction : ICastableAbility
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
 
         velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
 
-        if (mode == IAbility.ExecMode.Live) ProcessBufferedInput(context);
+        ProcessBufferedInput(context);
 
         return velocity;
     }
 
     public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(PlayerHost context, IAbility next, IAbility.ExecMode mode)
+    public void DoCleanup(PlayerHost context)
     {
         acceptingInput = true;
 

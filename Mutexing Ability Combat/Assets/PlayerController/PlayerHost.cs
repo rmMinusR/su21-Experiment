@@ -18,7 +18,7 @@ public sealed class PlayerHost : MonoBehaviour
         //Capture controls
         controlMovement = controlsMap.FindAction("Move"); Debug.Assert(controlMovement != null);
         controlJump     = controlsMap.FindAction("Jump"); Debug.Assert(controlJump     != null);
-        
+
         //Ensure we have base movement
         baseMovement = GetComponent<BaseMovementAction>();
         Debug.Assert(baseMovement != null);
@@ -167,7 +167,7 @@ public sealed class PlayerHost : MonoBehaviour
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, IAbility.ExecMode.Live); //TODO make manual again
+        _rb.velocity = DoPhysicsUpdate(_rb.velocity); //TODO: manual movement via KinematicsEvent
     }
 
     private void _UpdateContext()
@@ -179,7 +179,7 @@ public sealed class PlayerHost : MonoBehaviour
         input.jump = controlJump.ReadValue<float>() > 0.5f;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, IAbility.ExecMode mode)
+    public Vector2 DoPhysicsUpdate(Vector2 velocity)
     {
         //Update local up axis
         surfaceUp = Vector3.Slerp(
@@ -189,7 +189,7 @@ public sealed class PlayerHost : MonoBehaviour
             ).normalized;
 
         //Basic movement
-        velocity += baseMovement.DoPhysics(this, velocity, mode);
+        velocity += baseMovement.DoPhysics(this, velocity);
         
         //Special movement
         Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, velocity);

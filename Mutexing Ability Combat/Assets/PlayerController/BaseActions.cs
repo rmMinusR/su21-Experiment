@@ -3,21 +3,16 @@ using UnityEngine;
 
 public abstract class IAbility : ScopedEventListener
 {
-    public enum ExecMode //TODO remove
-    {
-        Live,
-        LiveDelegated,
-        SimulatePath,
-        SimulateCurves
-    }
+    private PlayerHost _host;
+    protected PlayerHost host => _host != null ? _host : (_host = GetComponent<PlayerHost>());
 
-    public abstract Sprite GetIcon();
-    public abstract string GetName();
+    public virtual Sprite GetIcon() => null; //FIXME temporary measures
+    public virtual string GetName() => this.GetType().Name;
 }
 
 public abstract class ICastableAbility : IAbility
 {
-    public abstract bool ShowCastingUI(PlayerUIDriver ui);
+    //public abstract bool ShowCastingUI(PlayerUIDriver ui);
 }
 
 public enum Facing

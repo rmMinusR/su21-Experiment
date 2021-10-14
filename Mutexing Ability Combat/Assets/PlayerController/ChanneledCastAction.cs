@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,6 +12,9 @@ public class ChanneledCastAction : ICastableAbility
         Debug.Assert(controlActivate != null);
     }
 
+    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    public override void OnRecieveEvent(Event e) { }
+
     [SerializeField] private AnimationClip animCastBegin;
     [SerializeField] private AnimationClip animCastLoop;
 
@@ -17,14 +22,14 @@ public class ChanneledCastAction : ICastableAbility
     [SerializeField] [Min(0)] private float castEndLag = 0.5f;
     [SerializeField] [Min(0)] private float cooldown = 2.0f;
 
-    //TODO fix
+    //TODO beautify
     [SerializeField] private float nextTimeCastable;
     [SerializeField] private bool isGood = false;
     [SerializeField] private Events.AbilityEndEvent.Reason exitReason;
 
     public bool AllowEntry(in PlayerHost context) => controlActivate.ReadValue<float>() > 0.5f && nextTimeCastable < context.time.stable;
 
-    public void DoSetup(PlayerHost context, IAbility prev, IAbility.ExecMode mode)
+    public void DoSetup(PlayerHost context)
     {
         context.anim.PlayAnimation(animCastBegin, immediately: true);
         context.anim.PlayAnimation(animCastLoop, immediately: false);
@@ -43,7 +48,7 @@ public class ChanneledCastAction : ICastableAbility
     //FIXME bad practice, DoPhysics is supposed to be stateless
     [SerializeField] private float activeUntil = 0;
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity, IAbility.ExecMode mode)
+    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
     {
         //Apply gravity
         velocity += Physics2D.gravity * context.time.delta;
@@ -63,7 +68,7 @@ public class ChanneledCastAction : ICastableAbility
 
     public bool AllowExit(in PlayerHost context) => context.time.stable >= activeUntil;
 
-    public void DoCleanup(PlayerHost context, IAbility next, IAbility.ExecMode mode)
+    public void DoCleanup(PlayerHost context)
     {
         //context.ui.ClearCurrentAbility(exitReason);
         EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(exitReason));

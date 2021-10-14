@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Events
 {
@@ -7,9 +8,11 @@ namespace Events
         public ICastableAbility ability;
     }
 
+    public class AbilityTryCastEvent : AbilityEvent { }
+
     public class AbilityStartEvent : AbilityEvent
     {
-
+        public Vector2 aimTargetRaw;
     }
 
     public class AbilityEndEvent : AbilityEvent

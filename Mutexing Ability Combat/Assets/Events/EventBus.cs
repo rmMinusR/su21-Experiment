@@ -48,7 +48,7 @@ public sealed class EventBus : MonoBehaviour
 
     #endregion
 
-    public Event DispatchEvent(Event e)
+    public T DispatchEvent<T>(T e) where T : Event
     {
         for(System.Type t = e.GetType(); t != typeof(object); t = t.BaseType)
         {

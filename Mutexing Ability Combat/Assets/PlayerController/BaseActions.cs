@@ -13,6 +13,40 @@ public abstract class IAbility : ScopedEventListener
 public abstract class ICastableAbility : IAbility
 {
     //public abstract bool ShowCastingUI(PlayerUIDriver ui);
+
+    [SerializeField] private bool _currentlyCasting = false;
+    protected bool CurrentlyCasting => _currentlyCasting;
+
+    protected void FixedUpdate()
+    {
+        //TODO how can we make this if block better?
+        if (!CurrentlyCasting && ShouldStart())
+        {
+            if(!EventBus.Instance.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
+            {
+                _currentlyCasting = true;
+                DoStartCast();
+            }
+        }
+        else if (CurrentlyCasting && ShouldEnd())
+        {
+            //TODO should we have an event for stopping cast too?
+            _currentlyCasting = false;
+            DoEndCast();
+        }
+        else
+        {
+            DoWhileCasting();
+        }
+    }
+
+    public abstract bool ShouldStart();
+    public virtual void DoStartCast() { }
+
+    public virtual void DoWhileCasting() { }
+
+    public abstract bool ShouldEnd();
+    public virtual void DoEndCast() { }
 }
 
 public enum Facing

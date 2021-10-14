@@ -6,13 +6,29 @@ namespace Events
     public abstract class AbilityEvent : Event
     {
         public ICastableAbility ability;
+
+        protected AbilityEvent(ICastableAbility ability)
+        {
+            this.ability = ability;
+        }
     }
 
-    public class AbilityTryCastEvent : AbilityEvent { }
+    public class AbilityTryCastEvent : AbilityEvent
+    {
+        public AbilityTryCastEvent(ICastableAbility ability) :
+            base(ability)
+        {
+
+        }
+    }
 
     public class AbilityStartEvent : AbilityEvent
     {
-        public Vector2 aimTargetRaw;
+        public AbilityStartEvent(ICastableAbility ability) :
+            base(ability)
+        {
+
+        }
     }
 
     public class AbilityEndEvent : AbilityEvent
@@ -27,7 +43,8 @@ namespace Events
         public Reason reason;
         public bool showMessage;
 
-        public AbilityEndEvent(Reason reason, bool showMessage = true)
+        public AbilityEndEvent(ICastableAbility ability, Reason reason, bool showMessage = true) :
+            base(ability)
         {
             this.reason = reason;
             this.showMessage = showMessage;

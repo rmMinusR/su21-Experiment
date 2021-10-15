@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ChanneledCastAction : ICastableAbility
+public class ChanneledCastAction : ICastableAbility, IMovementProvider
 {
     private InputAction controlActivate;
     private void Awake()
@@ -21,16 +21,23 @@ public class ChanneledCastAction : ICastableAbility
     [SerializeField] [Min(0)] private float maxChannelTime = 3.5f;
     [SerializeField] [Min(0)] private float cooldown = 2.0f;
 
-    public override bool ShouldStart() => controlActivate.ReadAsButton() && nextTimeCastable < host.time.stable;
+    [SerializeField] private OwnedMutex<IAbility> ownedMutexCast;
+    [SerializeField] private OwnedMutex<IMovementProvider> ownedMutexMove;
+
+    public override bool ShouldStart() => controlActivate.ReadAsButton() && nextTimeCastable < host.time.stable && !host.casting.IsClaimed && !host.moving.IsClaimed;
 
     public override void DoStartCast()
     {
         host.anim.PlayAnimation(animCastBegin, immediately: true);
         host.anim.PlayAnimation(animCastLoop, immediately: false);
         host.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
+
         exitReason = Events.AbilityEndEvent.Reason.Interrupted;
         isGood = true;
         channelStartTime = host.time.stable;
+        
+        ownedMutexCast = host.casting.Claim(this);
+        ownedMutexMove = host.moving.Claim(this);
     }
 
     [Header("For animator")]
@@ -57,12 +64,12 @@ public class ChanneledCastAction : ICastableAbility
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity) //TODO fixme
+    public Vector2 DoMovement(Vector2 velocity)
     {
         //Apply gravity
-        velocity += Physics2D.gravity * context.time.delta;
+        velocity += Physics2D.gravity * host.time.delta;
 
-        velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
+        velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, host.time.delta));
 
         return velocity;
     }
@@ -71,7 +78,15 @@ public class ChanneledCastAction : ICastableAbility
 
     public override void DoEndCast()
     {
+        ownedMutexCast.Release();
+        ownedMutexMove.Release();
+        
         EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
         nextTimeCastable = host.time.stable + cooldown;
+    }
+
+    public override void WriteAnimations(PlayerAnimationDriver anim)
+    {
+        //TODO implement
     }
 }

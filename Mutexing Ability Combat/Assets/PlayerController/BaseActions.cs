@@ -1,13 +1,15 @@
 ﻿using System;
 using UnityEngine;
 
-public abstract class IAbility : ScopedEventListener
+public abstract class IAbility : ScopedEventListener, IAnimationProvider
 {
     private PlayerHost _host;
     protected PlayerHost host => _host != null ? _host : (_host = GetComponent<PlayerHost>());
 
     public virtual Sprite GetIcon() => null; //FIXME temporary measures
     public virtual string GetName() => this.GetType().Name;
+
+    public abstract void WriteAnimations(PlayerAnimationDriver anim);
 }
 
 public abstract class ICastableAbility : IAbility
@@ -45,6 +47,11 @@ public abstract class ICastableAbility : IAbility
 
     public abstract bool ShouldEnd();
     public virtual void DoEndCast() { }
+}
+
+public interface IMovementProvider
+{
+    public Vector2 DoMovement(Vector2 currentVelocity);
 }
 
 public enum Facing

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class BaseMovementAction : IAbility
+public sealed class BaseMovementAction : IAbility, IMovementProvider
 {
     protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
     public override void OnRecieveEvent(Event e) { }
@@ -27,16 +27,16 @@ public sealed class BaseMovementAction : IAbility
     [Header("Animations")]
     [SerializeField] private AnimationClip[] anims;
 
-    public void _ApplyGravity(PlayerHost context, ref Vector2 velocity)
+    public void _ApplyGravity(ref Vector2 velocity)
     {
         //Apply gravity
-        velocity += Physics2D.gravity * context.time.delta;
+        velocity += Physics2D.gravity * host.time.delta;
     }
 
-    public void _ApplyStaticFriction(PlayerHost context, ref Vector2 velocity, float input)
+    public void _ApplyStaticFriction(ref Vector2 velocity, float input)
     {
         //Snappiness thresholding
-        if(context.GroundRatio > 0.05f) {
+        if(host.GroundRatio > 0.05f) {
             if(Mathf.Abs(input) > 0.01f) {
                 //Boost
                 if (Mathf.Abs(velocity.x) < _adjustedCutoffSnappiness && Mathf.Sign(velocity.x) == Mathf.Sign(input)) velocity.x = _adjustedCutoffSnappiness * Mathf.Sign(velocity.x);
@@ -47,57 +47,52 @@ public sealed class BaseMovementAction : IAbility
         }
     }
 
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
+    public Vector2 DoMovement(Vector2 velocity)
     {
-        _ApplyGravity(context, ref velocity);
+        _ApplyGravity(ref velocity);
 
         //Get user input
-        //TODO switch to context.input.local?
-        float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
-        context.facing = FacingExt.Detect(localInput, 0.05f);
+        //TODO switch to host.input.local?
+        float localInput = Vector2.Dot(host.input.global, host.surfaceRight);
+        host.facing = FacingExt.Detect(localInput, 0.05f);
 
-        velocity += _ApplySurfaceSticking(context);
+        velocity += _ApplySurfaceSticking();
 
         //Velocity to local space
-        Vector2 localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = host.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
-        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
+        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(host.GroundRatio), host.time.delta)) * moveSpeed;
 
-        _ApplyStaticFriction(context, ref localVelocity, localInput);
+        _ApplyStaticFriction(ref localVelocity, localInput);
 
         //Transform back to global space
-        velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = host.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
-        if(context.IsGrounded && context.input.jump)
+        if(host.IsGrounded && host.input.jump)
         {
-            Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
+            Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, host.surfaceUp, wallJumpAngle).normalized * jumpForce;
             velocity.y = jv.y;
             velocity.x += jv.x;
-            context.MarkUngrounded();
+            host.MarkUngrounded();
         }
 
         velocity = _ProcessFakeFriction(velocity);
 
-        //Write for AnimationDriver
-        float vx = velocity.x/moveSpeed;
-        context.facing = FacingExt.Detect(vx, 0.05f);
-        context.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length*vx))], immediately: true);
-
         return velocity;
     }
 
-    public Vector2 _ApplySurfaceSticking(PlayerHost context)
+    public Vector2 _ApplySurfaceSticking()
     {
-        if (context.lastKnownFlattest.HasValue)
+        if (host.lastKnownFlattest.HasValue)
         {
             //If we're on a surface and not trying to jump
-            if (context.IsGrounded && !context.input.jump)
+            if (host.IsGrounded && !host.input.jump)
             {
                 //Slope antislide
-                return - Vector2Ext.Proj(Physics2D.gravity * context.time.delta, context.surfaceRight);
+                return - Vector2Ext.Proj(Physics2D.gravity * host.time.delta, host.surfaceRight);
             }
         }
 
@@ -123,4 +118,11 @@ public sealed class BaseMovementAction : IAbility
     }
 
     #endregion
+
+    public override void WriteAnimations(PlayerAnimationDriver anim)
+    {
+        float vx = host.velocity.x/moveSpeed;
+        //host.facing = FacingExt.Detect(vx, 0.05f);
+        host.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length * vx))], immediately: true);
+    }
 }

@@ -60,14 +60,16 @@ public sealed class PlayerHost : MonoBehaviour
     public Contact? lastKnownFlattest;
     public float CurrentSurfaceAngle(float time) => IsGrounded ? lastKnownFlattest?.angle ?? 0 : 0;
 
+    public Vector2 velocity => _rb.velocity;
+
     //Params most relevant to basic function
     public InputParam input;
     public TimeParam time;
     public Facing facing;
 
-    public Mutex<IAbility> casting = new Mutex<IAbility>();
-    public Mutex<IAbility> moving  = new Mutex<IAbility>();
-
+    public readonly Mutex<IAbility> casting = new Mutex<IAbility>();
+    public readonly Mutex<IMovementProvider> moving  = new Mutex<IMovementProvider>();
+    
     #region Ground/ceiling checking
 
     [Header("Ground checking")]
@@ -189,7 +191,7 @@ public sealed class PlayerHost : MonoBehaviour
             ).normalized;
 
         //Movement
-        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, baseMovement.DoPhysics(this, velocity));
+        Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, (moving.IsClaimed ? moving.Owner : baseMovement).DoMovement(velocity));
         EventBus.Instance.DispatchEvent(moveQuery);
         if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
 

@@ -1,40 +1,56 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+public interface IAnimationProvider
+{
+    public void WriteAnimations(PlayerAnimationDriver anim);
+}
+
 public class PlayerAnimationDriver : MonoBehaviour
 {
-    [SerializeField] private PlayerHost context;
+    [SerializeField] private PlayerHost host;
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer playerSprite;
 
+    public Mutex<IAnimationProvider> mainSource;
+    public BaseMovementAction fallbackSource => host.baseMovement;
+
     public Facing currentFacing;
+
+    private void Awake()
+    {
+        mainSource = new Mutex<IAnimationProvider>();
+    }
 
     private void Start()
     {
-        Debug.Assert(context != null);
+        Debug.Assert(host != null);
         Debug.Assert(animator != null);
         Debug.Assert(playerSprite != null);
     }
 
     private void Update()
     {
+        //Poll for new frame data
+        (mainSource.IsClaimed ? mainSource.Owner : fallbackSource).WriteAnimations(this);
+
         //Process animation buffer
-        currentTimeLeft -= Time.deltaTime;
-        if (currentTimeLeft <= 0)
+        _currentTimeLeft -= Time.deltaTime;
+        if (_currentTimeLeft <= 0)
         {
-            if(buffer.Count > 0)
+            if(_buffer.Count > 0)
             {
-                currentlyPlaying = buffer[0];
-                if(buffer.Count > 1) buffer.RemoveAt(0);
+                _currentlyPlaying = _buffer[0];
+                if(_buffer.Count > 1) _buffer.RemoveAt(0);
                 //TODO find way that works with name mismatches
-                animator.Play(currentlyPlaying.name);
-                currentTimeLeft = currentlyPlaying.length;
+                animator.Play(_currentlyPlaying.name);
+                _currentTimeLeft = _currentlyPlaying.length;
             }
         }
 
         //Do sprite flipping
         //Tmp is needed to detect changes
-        Facing tmpCurFacing = context.facing;
+        Facing tmpCurFacing = host.facing;
         if (tmpCurFacing != Facing.Agnostic)
         {
             currentFacing = tmpCurFacing;
@@ -43,21 +59,21 @@ public class PlayerAnimationDriver : MonoBehaviour
     }
 
     [Header("Animation status")]
-    [SerializeField] private List<AnimationClip> buffer; //Would use a Queue but it doesn't serialize. Thanks Unity.
-    [SerializeField] private AnimationClip currentlyPlaying; public AnimationClip CurrentlyPlaying => currentlyPlaying;
-    [SerializeField] private float currentTimeLeft = 0;
+    [SerializeField] private List<AnimationClip> _buffer; //Would use a Queue but it doesn't serialize. Thanks Unity.
+    [SerializeField] private AnimationClip _currentlyPlaying; public AnimationClip CurrentlyPlaying => _currentlyPlaying;
+    [SerializeField] private float _currentTimeLeft = 0;      public float CurrentTimeLeft => _currentTimeLeft;
 
     public void PlayAnimation(AnimationClip anim, bool immediately = false)
     {
         if (immediately)
         {
-            if (anim != currentlyPlaying)
+            if (anim != _currentlyPlaying)
             {
-                buffer.Clear();
-                currentTimeLeft = 0;
+                _buffer.Clear();
+                _currentTimeLeft = 0;
             }
-            else if(buffer.Count > 1) buffer.RemoveRange(1, buffer.Count - 1);
+            else if(_buffer.Count > 1) _buffer.RemoveRange(1, _buffer.Count - 1);
         }
-        buffer.Add(anim);
+        _buffer.Add(anim);
     }
 }

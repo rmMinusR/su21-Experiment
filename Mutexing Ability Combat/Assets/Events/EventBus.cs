@@ -57,7 +57,17 @@ public sealed class EventBus : MonoBehaviour
     {
         for(System.Type t = e.GetType(); t != typeof(object); t = t.BaseType)
         {
-            if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t]) i.OnRecieveEvent(e);
+            if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t])
+            {
+                try
+                {
+                    i.OnRecieveEvent(e);
+                }
+                catch(System.Exception exc)
+                {
+                    Debug.LogException(exc);
+                }
+            }
         }
 
         return e;

@@ -162,11 +162,11 @@ public sealed class Mutex<T> where T : class
 {
     private T _owner;
     public T Owner => _owner;
-    public bool isClaimed => _owner != null;
+    public bool IsClaimed => _owner != null;
 
     public OwnedMutex<T> Claim(T byWho)
     {
-        if (!isClaimed)
+        if (!IsClaimed)
         {
             _owner = byWho;
             return new OwnedMutex<T>(this);
@@ -176,10 +176,9 @@ public sealed class Mutex<T> where T : class
 
     public void Release(OwnedMutex<T> by, bool force = false)
     {
-        if (isClaimed && (Owner == by.Owner || force))
+        if (IsClaimed && (Owner == by.Owner || force))
         {
             _owner = null;
-            by.Invalidate();
         }
         else throw new InvalidOperationException();
     }
@@ -191,10 +190,12 @@ public sealed class OwnedMutex<T> where T : class
     [SerializeField] [HideInInspector] private Mutex<T> mutex;
     [SerializeField] private T _owner;
     public T Owner => _owner;
+    public bool IsValid => mutex != null;
 
     public OwnedMutex(Mutex<T> mutex)
     {
         this.mutex = mutex;
+        this._owner = mutex.Owner;
     }
 
     public void Release()
@@ -203,7 +204,7 @@ public sealed class OwnedMutex<T> where T : class
         Invalidate();
     }
 
-    public void Invalidate() => mutex = null;
+    private void Invalidate() => mutex = null;
 }
 
 public static class InputExt

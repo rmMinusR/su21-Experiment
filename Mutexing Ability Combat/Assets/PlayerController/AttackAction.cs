@@ -90,4 +90,9 @@ public class AttackAction : ICastableAbility
     {
         acceptingInput = true;
     }
+
+    public override void WriteAnimations(PlayerAnimationDriver anim)
+    {
+        //TODO implement
+    }
 }

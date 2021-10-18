@@ -1139,7 +1139,7 @@ AnimatorStateMachine:
     m_Position: {x: 461.48932, y: 758.6171, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 7476074210589931429}
-    m_Position: {x: 471.48932, y: 768.6171, z: 0}
+    m_Position: {x: 560, y: 150, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 2102032576662355533}
     m_Position: {x: 481.48932, y: 778.6171, z: 0}
@@ -1154,7 +1154,7 @@ AnimatorStateMachine:
     m_Position: {x: 511.48932, y: 808.6171, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -8775219573749288028}
-    m_Position: {x: 521.4893, y: 818.6171, z: 0}
+    m_Position: {x: 560, y: 80, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1886280091866117361}
     m_Position: {x: 531.4893, y: 828.6171, z: 0}
@@ -2078,7 +2078,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: run
-  m_Speed: 0.175
+  m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []

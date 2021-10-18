@@ -121,8 +121,10 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
 
     public override void WriteAnimations(PlayerAnimationDriver anim)
     {
-        float vx = host.velocity.x/moveSpeed;
+        float vx = Mathf.Abs(host.velocity.x/moveSpeed);
+        int index = (int)(anims.Length*vx);
+        index = Mathf.Min(index, anims.Length - 1); //Ensure good index
         //host.facing = FacingExt.Detect(vx, 0.05f);
-        host.anim.PlayAnimation(anims[(int)Mathf.Clamp01(Mathf.Abs(anims.Length * vx))], immediately: true);
+        host.anim.PlayAnimation(anims[index], immediately: true);
     }
 }

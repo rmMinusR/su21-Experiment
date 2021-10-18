@@ -192,11 +192,11 @@ public sealed class PlayerHost : MonoBehaviour
 
         //Movement
         Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, (moving.IsClaimed ? moving.Owner : baseMovement).DoMovement(velocity));
-        EventBus.Instance.DispatchEvent(moveQuery);
+        EventBus.DispatchEvent(moveQuery);
         if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
 
         Events.KinematicsEvent kinematicsEvent = new Events.KinematicsEvent(transform.position, velocity);
-        EventBus.Instance.DispatchEvent(kinematicsEvent);
+        EventBus.DispatchEvent(kinematicsEvent);
 
         return velocity;
     }

@@ -78,10 +78,12 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
 
     public override void DoEndCast()
     {
+        Debug.Log("Stopped channeling: "+exitReason);
+
         ownedMutexCast.Release();
         ownedMutexMove.Release();
         
-        EventBus.Instance.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
+        EventBus.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
         nextTimeCastable = host.time.stable + cooldown;
     }
 

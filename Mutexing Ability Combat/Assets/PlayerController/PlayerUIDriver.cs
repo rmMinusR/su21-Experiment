@@ -63,6 +63,7 @@ public class PlayerUIDriver : ScopedEventListener
 
     public override void OnRecieveEvent(Event e)
     {
+        Debug.Log("Recieved event: "+e);
         //if(e is Events.AbilityStartEvent eStart) SetCurrentAbility(eStart.ability); //TODO reimplement
         if(e is Events.AbilityEndEvent eEnd) ClearCurrentAbility(eEnd.reason, eEnd.showMessage);
     }

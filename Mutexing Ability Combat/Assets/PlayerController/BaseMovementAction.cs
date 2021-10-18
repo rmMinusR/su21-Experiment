@@ -25,6 +25,7 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
     [SerializeField] [Min(0)]      private float jumpForce;
 
     [Header("Animations")]
+    [SerializeField] private AnimationCurve animCurve = AnimationCurve.Linear(0, 0, 1, 1);
     [SerializeField] private AnimationClip[] anims;
 
     public void _ApplyGravity(ref Vector2 velocity)
@@ -54,7 +55,7 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         //Get user input
         //TODO switch to host.input.local?
         float localInput = Vector2.Dot(host.input.global, host.surfaceRight);
-        host.facing = FacingExt.Detect(localInput, 0.05f);
+        //host.facing = FacingExt.Detect(localInput, 0.05f);
 
         velocity += _ApplySurfaceSticking();
 
@@ -122,9 +123,9 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
     public override void WriteAnimations(PlayerAnimationDriver anim)
     {
         float vx = Mathf.Abs(host.velocity.x/moveSpeed);
-        int index = (int)(anims.Length*vx);
+        int index = (int)(animCurve.Evaluate(vx)*anims.Length);
         index = Mathf.Min(index, anims.Length - 1); //Ensure good index
-        //host.facing = FacingExt.Detect(vx, 0.05f);
         host.anim.PlayAnimation(anims[index], immediately: true);
+        host.facing = FacingExt.Detect(vx, 0.05f);
     }
 }

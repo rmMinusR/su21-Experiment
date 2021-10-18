@@ -22,7 +22,7 @@ public abstract class ICastableAbility : IAbility
         //TODO how can we make this if block better?
         if (!CurrentlyCasting && ShouldStart())
         {
-            if(!EventBus.Instance.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
+            if(!EventBus.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
             {
                 _currentlyCasting = true;
                 DoStartCast();
@@ -34,7 +34,7 @@ public abstract class ICastableAbility : IAbility
             _currentlyCasting = false;
             DoEndCast();
         }
-        else
+        else if (CurrentlyCasting)
         {
             DoWhileCasting();
         }

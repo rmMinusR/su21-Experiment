@@ -122,10 +122,12 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
 
     public override void WriteAnimations(PlayerAnimationDriver anim)
     {
+        host.facing = FacingExt.Detect(host.input.local.x, 0.05f);
+        if (host.facing == Facing.Agnostic) host.facing = FacingExt.Detect(host.velocity.x, 0.05f);
+
         float vx = Mathf.Abs(host.velocity.x/moveSpeed);
         int index = (int)(animCurve.Evaluate(vx)*anims.Length);
         index = Mathf.Min(index, anims.Length - 1); //Ensure good index
         host.anim.PlayAnimation(anims[index], immediately: true);
-        host.facing = FacingExt.Detect(vx, 0.05f);
     }
 }

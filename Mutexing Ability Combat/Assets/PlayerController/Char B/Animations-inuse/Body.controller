@@ -546,6 +546,32 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!1102 &-5670678383634619235
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: airborne-rising
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 1fe8b9c9da28d1f4b897ef8c247dbade, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-5636247387848273774
 AnimatorState:
   serializedVersion: 6
@@ -1043,16 +1069,16 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 3100820059157399592}
-    m_Position: {x: 330, y: 80, z: 0}
+    m_Position: {x: 330, y: 40, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 7825853099855930380}
-    m_Position: {x: 330, y: 150, z: 0}
+    m_Position: {x: 330, y: 80, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 6715274764475166837}
-    m_Position: {x: 550, y: 630, z: 0}
+    m_Position: {x: 590, y: 550, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1382793083584702151}
-    m_Position: {x: 560, y: 710, z: 0}
+    m_Position: {x: 590, y: 630, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -3579908368723012576}
     m_Position: {x: 330, y: 260, z: 0}
@@ -1105,9 +1131,6 @@ AnimatorStateMachine:
     m_State: {fileID: -7178384644923459341}
     m_Position: {x: 280, y: 680, z: 0}
   - serializedVersion: 1
-    m_State: {fileID: 183473868738874526}
-    m_Position: {x: 290, y: 690, z: 0}
-  - serializedVersion: 1
     m_State: {fileID: 4727942944519455419}
     m_Position: {x: 300, y: 700, z: 0}
   - serializedVersion: 1
@@ -1139,7 +1162,7 @@ AnimatorStateMachine:
     m_Position: {x: 390, y: 790, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 7476074210589931429}
-    m_Position: {x: 560, y: 150, z: 0}
+    m_Position: {x: 330, y: 160, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 2102032576662355533}
     m_Position: {x: 410, y: 810, z: 0}
@@ -1154,10 +1177,16 @@ AnimatorStateMachine:
     m_Position: {x: 440, y: 840, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -8775219573749288028}
-    m_Position: {x: 560, y: 80, z: 0}
+    m_Position: {x: 330, y: 120, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1886280091866117361}
     m_Position: {x: 460, y: 860, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 3622863738317368410}
+    m_Position: {x: 560, y: 120, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -5670678383634619235}
+    m_Position: {x: 560, y: 80, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -1372,32 +1401,6 @@ AnimatorController:
     m_IKPass: 0
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
---- !u!1102 &183473868738874526
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: fall
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions: []
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 317c7c178a6892242b09bfbcb7d5df9a, type: 2}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
 --- !u!1102 &779238177999316187
 AnimatorState:
   serializedVersion: 6
@@ -1779,6 +1782,32 @@ AnimatorState:
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
   m_Motion: {fileID: 7400000, guid: 991ccc9b85b0f834e98c99d957b46058, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &3622863738317368410
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: airborne-falling
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 317c7c178a6892242b09bfbcb7d5df9a, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

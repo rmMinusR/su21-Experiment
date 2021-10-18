@@ -51,7 +51,7 @@ public abstract class ICastableAbility : IAbility
 
 public interface IMovementProvider
 {
-    public Vector2 DoMovement(Vector2 currentVelocity);
+    public Vector2 DoMovement(Vector2 currentVelocity, InputParam input);
 }
 
 public enum Facing

@@ -25,8 +25,11 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
     [SerializeField] [Min(0)]      private float jumpForce;
 
     [Header("Animations")]
-    [SerializeField] private AnimationCurve animCurve = AnimationCurve.Linear(0, 0, 1, 1);
-    [SerializeField] private AnimationClip[] anims;
+    [SerializeField] private AnimationCurve groundAnimCurve = AnimationCurve.Linear(0, 0, 1, 1);
+    [Tooltip("Selected based on X input"   )] [SerializeField] private AnimationClip[] groundAnims;
+    [Tooltip("Selected based on Y velocity")] [SerializeField] private AnimationClip airborneRisingAnim;
+    [Tooltip("Selected based on Y velocity")] [SerializeField] private AnimationClip airborneFallingAnim;
+    //TODO slide, wallslide
 
     public void _ApplyGravity(ref Vector2 velocity)
     {
@@ -48,16 +51,16 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         }
     }
 
-    public Vector2 DoMovement(Vector2 velocity)
+    public Vector2 DoMovement(Vector2 velocity, InputParam input)
     {
         _ApplyGravity(ref velocity);
 
         //Get user input
-        //TODO switch to host.input.local?
-        float localInput = Vector2.Dot(host.input.global, host.surfaceRight);
+        //TODO switch to input.local?
+        float localInput = Vector2.Dot(input.global, host.surfaceRight);
         //host.facing = FacingExt.Detect(localInput, 0.05f);
 
-        velocity += _ApplySurfaceSticking();
+        velocity += _ApplySurfaceSticking(input);
 
         //Velocity to local space
         Vector2 localVelocity = host.surfaceToGlobal.inverse.MultiplyVector(velocity);
@@ -72,7 +75,7 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
 
         //Handle jumping, if applicable
         //TODO only on first press
-        if(host.IsGrounded && host.input.jump)
+        if(host.IsGrounded && input.jump)
         {
             Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, host.surfaceUp, wallJumpAngle).normalized * jumpForce;
             velocity.y = jv.y;
@@ -85,12 +88,12 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         return velocity;
     }
 
-    public Vector2 _ApplySurfaceSticking()
+    public Vector2 _ApplySurfaceSticking(InputParam input)
     {
         if (host.lastKnownFlattest.HasValue)
         {
             //If we're on a surface and not trying to jump
-            if (host.IsGrounded && !host.input.jump)
+            if (host.IsGrounded && !input.jump)
             {
                 //Slope antislide
                 return - Vector2Ext.Proj(Physics2D.gravity * host.time.delta, host.surfaceRight);
@@ -125,9 +128,18 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         host.facing = FacingExt.Detect(host.input.local.x, 0.05f);
         if (host.facing == Facing.Agnostic) host.facing = FacingExt.Detect(host.velocity.x, 0.05f);
 
-        float vx = Mathf.Abs(host.velocity.x/moveSpeed);
-        int index = (int)(animCurve.Evaluate(vx)*anims.Length);
-        index = Mathf.Min(index, anims.Length - 1); //Ensure good index
-        host.anim.PlayAnimation(anims[index], immediately: true);
+        if(host.IsGrounded)
+        {
+            //We're grounded, play appropriate anims
+            float vx = Mathf.Abs(host.velocity.x/moveSpeed);
+            int index = (int)(groundAnimCurve.Evaluate(vx)*groundAnims.Length);
+            index = Mathf.Min(index, groundAnims.Length - 1); //Ensure good index
+            host.anim.PlayAnimation(groundAnims[index], immediately: true);
+        }
+        else
+        {
+            //We're airborne, play rising/falling anims
+            host.anim.PlayAnimation(host.velocity.y > 0 ? airborneRisingAnim : airborneFallingAnim, immediately: true);
+        }
     }
 }

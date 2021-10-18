@@ -64,14 +64,21 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
         }
     }
 
-    public Vector2 DoMovement(Vector2 velocity)
+    public Vector2 DoMovement(Vector2 velocity, InputParam _)
     {
+        /*
         //Apply gravity
         velocity += Physics2D.gravity * host.time.delta;
 
         velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, host.time.delta));
+        */
 
-        return velocity;
+        return host.baseMovement.DoMovement(velocity, new InputParam
+        {
+            global = Vector2.zero,
+            local = Vector2.zero,
+            jump = false
+        });
     }
 
     public override bool ShouldEnd() => !isGood;

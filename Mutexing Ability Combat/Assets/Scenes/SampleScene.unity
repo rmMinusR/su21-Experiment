@@ -769,6 +769,8 @@ MonoBehaviour:
   attackAnimsAirborne:
   - {fileID: 7400000, guid: 1a0a2c16272e59946b57ae6401a2c291, type: 2}
   - {fileID: 7400000, guid: 41d76222cec55a34c82300a6ba9a34e1, type: 2}
+  ownedMutexCast:
+    _owner: {fileID: 0}
   velocityOverride: {x: 0, y: 0}
   overrideSmoothing: 0.5
   acceptingInput: 1

@@ -12,15 +12,9 @@ public class PlayerAnimationDriver : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer playerSprite;
 
-    public Mutex<IAnimationProvider> mainSource;
-    public BaseMovementAction fallbackSource => host.baseMovement;
+    private BaseMovementAction fallbackSource => host.baseMovement;
 
     public Facing currentFacing;
-
-    private void Awake()
-    {
-        mainSource = new Mutex<IAnimationProvider>();
-    }
 
     private void Start()
     {
@@ -31,8 +25,24 @@ public class PlayerAnimationDriver : MonoBehaviour
 
     private void Update()
     {
-        //Poll for new frame data
-        (mainSource.IsClaimed ? mainSource.Owner : fallbackSource).WriteAnimations(this);
+        //Resolve who to poll
+        IAnimationProvider casting = host.casting.Owner;
+        IAnimationProvider moving = (IAnimationProvider) host.moving.Owner;
+
+        //Poll for new frame data (messy)
+        if(casting == null && moving == null)
+        {
+            fallbackSource.WriteAnimations(this);
+        }
+        else if(casting == moving)
+        {
+            if(casting != null) casting.WriteAnimations(this);
+        }
+        else
+        {
+            if(casting != null) casting.WriteAnimations(this);
+            if(moving  != null) moving .WriteAnimations(this);
+        }
 
         //Process animation buffer
         _currentTimeLeft -= Time.deltaTime;

@@ -26,6 +26,8 @@ public class AttackAction : ICastableAbility
         activeUntil = context.time.stable + toPlay.length;
     }
 
+    [SerializeField] private OwnedMutex<IAbility> ownedMutexCast;
+
     public override bool ShouldStart()
     {
         bool hasInput = inputBuffer;
@@ -35,6 +37,8 @@ public class AttackAction : ICastableAbility
 
     public override void DoStartCast()
     {
+        ownedMutexCast = host.casting.Claim(this);
+
         //Play animation
         inputBuffer = false;
         swingCounter = 0;
@@ -61,19 +65,6 @@ public class AttackAction : ICastableAbility
         if(CanAttack) inputBuffer = true;
     }
 
-    //Read buffered input and act
-    public override void DoWhileCasting()
-    {
-        if(inputBuffer && allowTransition)
-        {
-            inputBuffer = false;
-            swingCounter = (swingCounter + 1) % (host.IsGrounded ? attackAnimsGrounded.Length : attackAnimsAirborne.Length);
-            _Play(host, swingCounter);
-            acceptingInput = false;
-            allowTransition = false;
-        }
-    }
-
     public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
     {
         //Apply gravity
@@ -88,11 +79,21 @@ public class AttackAction : ICastableAbility
 
     public override void DoEndCast()
     {
+        ownedMutexCast.Release();
+
         acceptingInput = true;
     }
 
+    //Read buffered input and apply
     public override void WriteAnimations(PlayerAnimationDriver anim)
     {
-        //TODO implement
+        if(inputBuffer && allowTransition)
+        {
+            inputBuffer = false;
+            swingCounter = (swingCounter + 1) % (host.IsGrounded ? attackAnimsGrounded.Length : attackAnimsAirborne.Length);
+            _Play(host, swingCounter);
+            acceptingInput = false;
+            allowTransition = false;
+        }
     }
 }

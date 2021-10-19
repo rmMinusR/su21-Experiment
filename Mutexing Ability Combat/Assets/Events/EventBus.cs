@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Priority_Queue;
+using System.Linq;
 
 namespace Events
 {
@@ -17,39 +18,45 @@ namespace Events
 public sealed class EventBus
 {
     #region Listeners
-    private static Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> listeners = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>();
+    private static Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> buses = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>();
 
     public static void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority)
     {
-        SimplePriorityQueue<IEventListener, Events.Priority> pq = listeners.GetOrCreate(eventType);
+        SimplePriorityQueue<IEventListener, Events.Priority> pq = buses.GetOrCreate(eventType);
         if(!pq.Contains(listener)) pq.Enqueue(listener, priority);
     }
-    public static void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].TryRemove(listener);
+    public static void RemoveListener(IEventListener listener, System.Type eventType) => buses[eventType].TryRemove(listener);
     public static void RemoveListenerFromAll(IEventListener listener)
     {
-        foreach(SimplePriorityQueue<IEventListener, Events.Priority> i in listeners.Values) i.TryRemove(listener);
+        foreach(SimplePriorityQueue<IEventListener, Events.Priority> bus in buses.Values) bus.TryRemove(listener);
     }
 
     #endregion
 
-    public static T DispatchEvent<T>(T e) where T : Event
+    public static T DispatchEvent<T>(T @event) where T : Event
     {
-        for(System.Type t = e.GetType(); t != typeof(object); t = t.BaseType)
+        int processCount = 0;
+
+        foreach(KeyValuePair<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> pair in buses)
         {
-            if(listeners.ContainsKey(t)) foreach(IEventListener i in listeners[t])
+            if(pair.Key.IsAssignableFrom(typeof(T)))
             {
-                try
+                foreach (IEventListener i in pair.Value)
                 {
-                    i.OnRecieveEvent(e);
-                }
-                catch(System.Exception exc)
-                {
-                    Debug.LogException(exc);
+                    try
+                    {
+                        i.OnRecieveEvent(@event);
+                        processCount++;
+                    }
+                    catch (System.Exception exc)
+                    {
+                        Debug.LogException(exc);
+                    }
                 }
             }
         }
-
-        return e;
+        
+        return @event;
     }
 }
 

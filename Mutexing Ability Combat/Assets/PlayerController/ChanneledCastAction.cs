@@ -28,16 +28,16 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
 
     public override void DoStartCast()
     {
-        host.anim.PlayAnimation(animCastBegin, immediately: true);
-        host.anim.PlayAnimation(animCastLoop, immediately: false);
-        host.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
-
         exitReason = Events.AbilityEndEvent.Reason.Interrupted;
         isGood = true;
         channelStartTime = host.time.stable;
-        
+
         ownedMutexCast = host.casting.Claim(this);
         ownedMutexMove = host.moving.Claim(this);
+
+        host.anim.PlayAnimation(animCastBegin, immediately: true);
+        host.anim.PlayAnimation(animCastLoop, immediately: false);
+        host.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
     }
 
     [Header("For animator")]
@@ -85,11 +85,9 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
 
     public override void DoEndCast()
     {
-        Debug.Log("Stopped channeling: "+exitReason);
-
         ownedMutexCast.Release();
         ownedMutexMove.Release();
-        
+
         EventBus.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
         nextTimeCastable = host.time.stable + cooldown;
     }

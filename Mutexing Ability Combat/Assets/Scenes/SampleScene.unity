@@ -373,6 +373,86 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &195785752
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 195785753}
+  - component: {fileID: 195785755}
+  - component: {fileID: 195785754}
+  m_Layer: 0
+  m_Name: Casting UI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &195785753
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195785752}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 610204713}
+  m_Father: {fileID: 607304556}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -0.27}
+  m_SizeDelta: {x: 0.5, y: 0.2}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &195785754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195785752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd12f2b7b8b91334b9447af54842dbea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  abilityUIContainer: {fileID: 610204712}
+  abilityIcon: {fileID: 1265733075}
+  abilityProgressBar: {fileID: 348194711}
+  abilityNameText: {fileID: 1987444232}
+  abilityCastTimeCurrent: 0
+  abilityCastTimeMax: 0
+  messagePrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
+  messageSource: {fileID: 1987444231}
+  messageLife: 2.5
+--- !u!223 &195785755
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 195785752}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 1
+  m_TargetDisplay: 0
 --- !u!212 &267139488
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -839,7 +919,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   anim: {fileID: 607304557}
-  ui: {fileID: 610204715}
+  ui: {fileID: 195785754}
   _lastGroundTime: -1000
   _surfaceUp: {x: 0, y: 0}
   input:
@@ -886,7 +966,7 @@ Transform:
   m_LocalScale: {x: 7.5, y: 7.5, z: 7.5}
   m_Children:
   - {fileID: 576323207}
-  - {fileID: 610204713}
+  - {fileID: 195785753}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -994,7 +1074,7 @@ MonoBehaviour:
   _currentlyCasting: 0
   animCastBegin: {fileID: 7400000, guid: d56aa644739eca64c9c9e7c5bb598907, type: 2}
   animCastLoop: {fileID: 7400000, guid: 5310b79e644d1be42a5a097933eb838e, type: 2}
-  maxChannelTime: 3.5
+  maxChannelTime: 2.5
   cooldown: 1
   ownedMutexCast:
     _owner: {fileID: 0}
@@ -1015,9 +1095,8 @@ GameObject:
   m_Component:
   - component: {fileID: 610204713}
   - component: {fileID: 610204714}
-  - component: {fileID: 610204715}
   m_Layer: 0
-  m_Name: Casting UI
+  m_Name: Casting UI Container
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1030,7 +1109,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 610204712}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -1038,13 +1117,13 @@ RectTransform:
   - {fileID: 817175860}
   - {fileID: 348194710}
   - {fileID: 1987444231}
-  m_Father: {fileID: 607304556}
-  m_RootOrder: 1
+  m_Father: {fileID: 195785753}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -0.27}
-  m_SizeDelta: {x: 0.5, y: 0.2}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &610204714
 Canvas:
@@ -1067,27 +1146,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 1
   m_TargetDisplay: 0
---- !u!114 &610204715
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 610204712}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd12f2b7b8b91334b9447af54842dbea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  abilityUIContainer: {fileID: 610204712}
-  abilityIcon: {fileID: 1265733075}
-  abilityProgressBar: {fileID: 348194711}
-  abilityNameText: {fileID: 1987444232}
-  abilityCastTimeCurrent: 0
-  abilityCastTimeMax: 0
-  messagePrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
-  messageSource: {fileID: 1987444231}
-  messageLife: 2.5
 --- !u!1 &639193584
 GameObject:
   m_ObjectHideFlags: 0

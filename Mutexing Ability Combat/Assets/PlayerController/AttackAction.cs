@@ -9,8 +9,16 @@ public class AttackAction : ICastableAbility
     private void Awake()
     {
         controlActivate = host.controlsMap.FindAction("Attack");
-        //TODO bind callback
         Debug.Assert(controlActivate != null);
+
+        //Bind callback
+        controlActivate.performed += OnAttack;
+    }
+
+    private void OnDestroy()
+    {
+        //Unbind callback
+        controlActivate.performed -= OnAttack;
     }
 
     protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
@@ -60,7 +68,7 @@ public class AttackAction : ICastableAbility
 
     public bool CanAttack => acceptingInput; //TODO || host.casting.owner != this) && EventBus.Instance.DispatchEvent(new AbilityTryCastEvent());
 
-    public void OnAttack()
+    public void OnAttack(InputAction.CallbackContext callbackContext)
     {
         if(CanAttack) inputBuffer = true;
     }

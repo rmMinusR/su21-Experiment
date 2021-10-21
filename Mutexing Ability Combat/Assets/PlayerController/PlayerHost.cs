@@ -20,7 +20,7 @@ public sealed class PlayerHost : MonoBehaviour
         controlJump     = controlsMap.FindAction("Jump"); Debug.Assert(controlJump     != null);
 
         //Ensure we have base movement
-        baseMovement = GetComponent<BaseMovementAction>();
+        if(baseMovement == null) baseMovement = GetComponentInChildren<BaseMovementAction>();
         Debug.Assert(baseMovement != null);
 
         _rb = GetComponent<Rigidbody2D>();
@@ -37,7 +37,7 @@ public sealed class PlayerHost : MonoBehaviour
 
     public PlayerUIDriver ui;
 
-    public BaseMovementAction baseMovement { get; private set; }
+    public BaseMovementAction baseMovement;
 
     #endregion
 

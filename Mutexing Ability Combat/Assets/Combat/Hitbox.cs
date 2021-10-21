@@ -22,12 +22,6 @@ public class Hitbox : MonoBehaviour, IDamagingEffect
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if(other.GetComponent<Hurtbox>() is Hurtbox hurtbox)
-        {
-            Events.DamageEvent @event = EventBus.DispatchEvent(new Events.DamageEvent(owner, hurtbox.owner, damage));
-            //FIXME is this bad practice since it might repeat boilerplate code, or good practice since it might eliminate side
-            //effects? Or should we split this into multiple events (ie one for amplification + one for mitigation/application)?
-            if (!@event.isCancelled) owner._HandleDamageEvent(@event);
-        }
+        if(other.GetComponent<Hurtbox>() is Hurtbox hurtbox) EventBus.DispatchEvent(new Events.DamageEvent(owner, hurtbox.owner, damage));
     }
 }

@@ -6,10 +6,13 @@
 
 public interface IDamageable : IEventListener
 {
-    internal void _HandleDamageEvent(Events.DamageEvent @event);
+    public bool ShowHealthUI();
+    public float GetHealth();
+    public float GetMaxHealth();
+    public bool IsAlive();
 }
 
 public interface ICombatant : IDamageable
 {
-    internal void _HandleHealEvent(Events.HealEvent @event);
+    
 }

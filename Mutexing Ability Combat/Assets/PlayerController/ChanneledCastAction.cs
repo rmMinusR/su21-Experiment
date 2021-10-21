@@ -8,7 +8,7 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
     private InputAction controlActivate;
     private void Awake()
     {
-        controlActivate = GetComponent<PlayerHost>().controlsMap.FindAction("Cast");
+        controlActivate = host.controlsMap.FindAction("Cast");
         Debug.Assert(controlActivate != null);
     }
 

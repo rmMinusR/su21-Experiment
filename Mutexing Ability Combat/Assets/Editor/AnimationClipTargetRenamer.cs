@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Animation clip target renamer.
@@ -21,7 +22,8 @@ public class AnimationClipTargetRenamer : EditorWindow
     /// <summary>
     /// The curve data for the animation.
     /// </summary>
-    private AnimationClipCurveData[] curveDatas;
+    private EditorCurveBinding[] curveBindings;
+    private AnimationCurve[] curveDatas;
 
     /// <summary>
     /// The names of the original GameObjects.
@@ -45,12 +47,12 @@ public class AnimationClipTargetRenamer : EditorWindow
 
     private void Initialize()
     {
-
-        curveDatas = AnimationUtility.GetAllCurves(selectedClip, true);
+        curveBindings = AnimationUtility.GetCurveBindings(selectedClip);
+        curveDatas = curveBindings.Select(c => AnimationUtility.GetEditorCurve(selectedClip, c)).ToArray();
 
         origObjectPaths = new List<string>();
         targetObjectPaths = new List<string>();
-        foreach (AnimationClipCurveData curveData in curveDatas)
+        foreach (EditorCurveBinding curveData in curveBindings)
         {
             if (curveData.path != "" && !origObjectPaths.Contains(curveData.path))
             {
@@ -63,7 +65,7 @@ public class AnimationClipTargetRenamer : EditorWindow
 
     private void Clear()
     {
-        curveDatas = null;
+        curveBindings = null;
         origObjectPaths = null;
         targetObjectPaths = null;
         initialized = false;
@@ -79,11 +81,11 @@ public class AnimationClipTargetRenamer : EditorWindow
 
             if (oldName != newName)
             {
-                foreach (var curveData in curveDatas)
+                for(int j = 0; j < curveBindings.Length; ++j)
                 {
-                    if (curveData.path == oldName)
+                    if (curveBindings[j].path == oldName)
                     {
-                        curveData.path = newName;
+                        curveBindings[j].path = newName;
                     }
                 }
             }
@@ -91,9 +93,9 @@ public class AnimationClipTargetRenamer : EditorWindow
 
         // set up the curves based on the new names.
         selectedClip.ClearCurves();
-        foreach (var curveData in curveDatas)
+        for (int j = 0; j < curveBindings.Length; ++j)
         {
-            selectedClip.SetCurve(curveData.path, curveData.type, curveData.propertyName, curveData.curve);
+            selectedClip.SetCurve(curveBindings[j].path, curveBindings[j].type, curveBindings[j].propertyName, curveDatas[j]);
         }
         Clear();
         Initialize();

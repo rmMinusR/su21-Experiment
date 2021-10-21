@@ -4,7 +4,7 @@ using UnityEngine;
 public abstract class IAbility : ScopedEventListener, IAnimationProvider
 {
     private PlayerHost _host;
-    protected PlayerHost host => _host != null ? _host : (_host = GetComponent<PlayerHost>());
+    protected PlayerHost host => _host != null ? _host : (_host = GetComponentInParent<PlayerHost>());
 
     public virtual Sprite GetIcon() => null; //FIXME temporary measures
     public virtual string GetName() => this.GetType().Name;

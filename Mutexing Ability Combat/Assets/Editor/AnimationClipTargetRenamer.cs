@@ -18,23 +18,58 @@ public class AnimationClipTargetRenamer : EditorWindow
 
     public AnimationClip selectedClip;
 
+    private abstract class RenameInfo
+    {
+        public EditorCurveBinding binding;
 
-    /// <summary>
-    /// The curve data for the animation.
-    /// </summary>
-    private EditorCurveBinding[] curveBindings;
-    private AnimationCurve[] curveDatas;
+        public readonly string originalPath;
+        public string targetPath;
 
-    /// <summary>
-    /// The names of the original GameObjects.
-    /// </summary>
-    private List<string> origObjectPaths;
+        public RenameInfo(EditorCurveBinding binding)
+        {
+            this.binding = binding;
+            originalPath = targetPath = binding.path+":"+binding.propertyName;
+        }
 
+        public abstract void WriteTo(AnimationClip clip);
+    }
 
-    /// <summary>
-    /// The names of the target GameObjects.
-    /// </summary>
-    private List<string> targetObjectPaths;
+    private sealed class RenameInfoFloat : RenameInfo
+    {
+        public readonly AnimationCurve data;
+
+        public RenameInfoFloat(EditorCurveBinding binding, AnimationClip clip) : base(binding)
+        {
+            data = AnimationUtility.GetEditorCurve(clip, binding);
+        }
+
+        public override void WriteTo(AnimationClip clip)
+        {
+            binding.path         = targetPath.Split(':')[0];
+            binding.propertyName = targetPath.Split(':')[1];
+            AnimationUtility.SetEditorCurve(clip, binding, data);
+        }
+    }
+
+    private sealed class RenameInfoObject : RenameInfo
+    {
+        public readonly ObjectReferenceKeyframe[] data;
+
+        public RenameInfoObject(EditorCurveBinding binding, AnimationClip clip) : base(binding)
+        {
+            data = AnimationUtility.GetObjectReferenceCurve(clip, binding);
+        }
+
+        public override void WriteTo(AnimationClip clip)
+        {
+            binding.path         = targetPath.Split(':')[0];
+            binding.propertyName = targetPath.Split(':')[1];
+            AnimationUtility.SetObjectReferenceCurve(clip, binding, data);
+        }
+
+    }
+
+    private RenameInfo[] renameInfos;
 
     private bool initialized;
 
@@ -47,56 +82,42 @@ public class AnimationClipTargetRenamer : EditorWindow
 
     private void Initialize()
     {
-        curveBindings = AnimationUtility.GetCurveBindings(selectedClip);
-        curveDatas = curveBindings.Select(c => AnimationUtility.GetEditorCurve(selectedClip, c)).ToArray();
-
-        origObjectPaths = new List<string>();
-        targetObjectPaths = new List<string>();
-        foreach (EditorCurveBinding curveData in curveBindings)
-        {
-            if (curveData.path != "" && !origObjectPaths.Contains(curveData.path))
-            {
-                origObjectPaths.Add(curveData.path);
-                targetObjectPaths.Add(curveData.path);
-            }
-        }
+        renameInfos = Enumerable.Union(
+            AnimationUtility.GetCurveBindings               (selectedClip).Select(b => (RenameInfo) new RenameInfoFloat (b, selectedClip)),
+            AnimationUtility.GetObjectReferenceCurveBindings(selectedClip).Select(b => (RenameInfo) new RenameInfoObject(b, selectedClip))
+        ).ToArray();
+        
         initialized = true;
     }
 
     private void Clear()
     {
-        curveBindings = null;
-        origObjectPaths = null;
-        targetObjectPaths = null;
+        renameInfos = null;
         initialized = false;
     }
 
     private void RenameTargets()
     {
         // set the curve data to the new values. 
-        for (int i = 0; i < targetObjectPaths.Count; i++)
+        for (int i = 0; i < renameInfos.Length; i++)
         {
-            string oldName = origObjectPaths[i];
-            string newName = targetObjectPaths[i];
+            string oldName = renameInfos[i].originalPath;
+            string newName = renameInfos[i].targetPath;
 
             if (oldName != newName)
             {
-                for(int j = 0; j < curveBindings.Length; ++j)
-                {
-                    if (curveBindings[j].path == oldName)
-                    {
-                        curveBindings[j].path = newName;
-                    }
-                }
+                renameInfos[i].binding.path = newName;
             }
         }
 
         // set up the curves based on the new names.
         selectedClip.ClearCurves();
-        for (int j = 0; j < curveBindings.Length; ++j)
+        for (int i = 0; i < renameInfos.Length; ++i)
         {
-            selectedClip.SetCurve(curveBindings[j].path, curveBindings[j].type, curveBindings[j].propertyName, curveDatas[j]);
+            renameInfos[i].WriteTo(selectedClip);
         }
+
+        //Refresh
         Clear();
         Initialize();
     }
@@ -107,19 +128,14 @@ public class AnimationClipTargetRenamer : EditorWindow
         // so we should be able to build the UI.
 
         // build the list of textboxes for renaming.
-        if (targetObjectPaths != null)
+        if (renameInfos != null)
         {
             EditorGUILayout.Space();
             EditorGUIUtility.labelWidth = 250;
 
-            for (int i = 0; i < targetObjectPaths.Count; i++)
+            for (int i = 0; i < renameInfos.Length; i++)
             {
-                string newName = EditorGUILayout.TextField(origObjectPaths[i], targetObjectPaths[i]);
-
-                if (targetObjectPaths[i] != newName)
-                {
-                    targetObjectPaths[i] = newName;
-                }
+                renameInfos[i].targetPath = EditorGUILayout.TextField(renameInfos[i].originalPath, renameInfos[i].targetPath);
             }
         }
     }

@@ -17,59 +17,8 @@ public class AnimationClipTargetRenamer : EditorWindow
 {
 
     public AnimationClip selectedClip;
-
-    private abstract class RenameInfo
-    {
-        public EditorCurveBinding binding;
-
-        public readonly string originalPath;
-        public string targetPath;
-
-        public RenameInfo(EditorCurveBinding binding)
-        {
-            this.binding = binding;
-            originalPath = targetPath = binding.path+":"+binding.propertyName;
-        }
-
-        public abstract void WriteTo(AnimationClip clip);
-    }
-
-    private sealed class RenameInfoFloat : RenameInfo
-    {
-        public readonly AnimationCurve data;
-
-        public RenameInfoFloat(EditorCurveBinding binding, AnimationClip clip) : base(binding)
-        {
-            data = AnimationUtility.GetEditorCurve(clip, binding);
-        }
-
-        public override void WriteTo(AnimationClip clip)
-        {
-            binding.path         = targetPath.Split(':')[0];
-            binding.propertyName = targetPath.Split(':')[1];
-            AnimationUtility.SetEditorCurve(clip, binding, data);
-        }
-    }
-
-    private sealed class RenameInfoObject : RenameInfo
-    {
-        public readonly ObjectReferenceKeyframe[] data;
-
-        public RenameInfoObject(EditorCurveBinding binding, AnimationClip clip) : base(binding)
-        {
-            data = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-        }
-
-        public override void WriteTo(AnimationClip clip)
-        {
-            binding.path         = targetPath.Split(':')[0];
-            binding.propertyName = targetPath.Split(':')[1];
-            AnimationUtility.SetObjectReferenceCurve(clip, binding, data);
-        }
-
-    }
-
-    private RenameInfo[] renameInfos;
+    
+    private RenameUtils.RenameInfo[] renameInfos;
 
     private bool initialized;
 
@@ -83,8 +32,8 @@ public class AnimationClipTargetRenamer : EditorWindow
     private void Initialize()
     {
         renameInfos = Enumerable.Union(
-            AnimationUtility.GetCurveBindings               (selectedClip).Select(b => (RenameInfo) new RenameInfoFloat (b, selectedClip)),
-            AnimationUtility.GetObjectReferenceCurveBindings(selectedClip).Select(b => (RenameInfo) new RenameInfoObject(b, selectedClip))
+            AnimationUtility.GetCurveBindings               (selectedClip).Select(b => new RenameUtils.RenameInfo(b)),
+            AnimationUtility.GetObjectReferenceCurveBindings(selectedClip).Select(b => new RenameUtils.RenameInfo(b))
         ).ToArray();
         
         initialized = true;
@@ -106,16 +55,18 @@ public class AnimationClipTargetRenamer : EditorWindow
 
             if (oldName != newName)
             {
-                renameInfos[i].binding.path = newName;
+                renameInfos[i].targetPath = newName;
             }
         }
 
         // set up the curves based on the new names.
+        RenameUtils.WriteInfo[] writers = Enumerable.Union(
+            AnimationUtility.GetCurveBindings               (selectedClip).Select(b => (RenameUtils.WriteInfo) new RenameUtils.WriteInfoFloat (b, selectedClip)),
+            AnimationUtility.GetObjectReferenceCurveBindings(selectedClip).Select(b => (RenameUtils.WriteInfo) new RenameUtils.WriteInfoObject(b, selectedClip))
+        ).ToArray();
+
         selectedClip.ClearCurves();
-        for (int i = 0; i < renameInfos.Length; ++i)
-        {
-            renameInfos[i].WriteTo(selectedClip);
-        }
+        for (int i = 0; i < renameInfos.Length; ++i) writers[i].WriteTo(selectedClip, renameInfos[i]);
 
         //Refresh
         Clear();
@@ -178,4 +129,75 @@ public class AnimationClipTargetRenamer : EditorWindow
         }
     }
 
+}
+
+
+namespace RenameUtils
+{
+    internal sealed class RenameInfo
+    {
+        public readonly string originalPath;
+        public readonly string originalProperty;
+        public string targetPath;
+        public string targetProperty;
+
+        public RenameInfo(EditorCurveBinding binding)
+        {
+            originalPath     = targetPath     = binding.path;
+            originalProperty = targetProperty = binding.propertyName;
+        }
+
+        public void Update(ref EditorCurveBinding binding)
+        {
+            if(originalPath == binding.path && originalProperty == binding.propertyName)
+            {
+                binding.path         = targetPath;
+                binding.propertyName = targetProperty;
+            }
+        }
+    }
+
+    internal abstract class WriteInfo
+    {
+        public EditorCurveBinding binding;
+
+        public WriteInfo(EditorCurveBinding binding)
+        {
+            this.binding = binding;
+        }
+
+        public abstract void WriteTo(AnimationClip clip, RenameInfo rename);
+    }
+
+    internal sealed class WriteInfoFloat : WriteInfo
+    {
+        public readonly AnimationCurve data;
+
+        public WriteInfoFloat(EditorCurveBinding binding, AnimationClip clip) : base(binding)
+        {
+            data = AnimationUtility.GetEditorCurve(clip, binding);
+        }
+
+        public override void WriteTo(AnimationClip clip, RenameInfo rename)
+        {
+            rename.Update(ref binding);
+            AnimationUtility.SetEditorCurve(clip, binding, data);
+        }
+    }
+
+    internal sealed class WriteInfoObject : WriteInfo
+    {
+        public readonly ObjectReferenceKeyframe[] data;
+
+        public WriteInfoObject(EditorCurveBinding binding, AnimationClip clip) : base(binding)
+        {
+            data = AnimationUtility.GetObjectReferenceCurve(clip, binding);
+        }
+
+        public override void WriteTo(AnimationClip clip, RenameInfo rename)
+        {
+            rename.Update(ref binding);
+            AnimationUtility.SetObjectReferenceCurve(clip, binding, data);
+        }
+    }
 }

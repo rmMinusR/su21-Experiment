@@ -42,7 +42,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: acceptingInput
-    path: 
+    path: Abilities
     classID: 114
     script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
   - curve:
@@ -70,7 +70,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: allowTransition
-    path: 
+    path: Abilities
     classID: 114
     script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
   m_PPtrCurves:
@@ -90,7 +90,7 @@ AnimationClip:
     - time: 0.5
       value: {fileID: 21300000, guid: 0130f0bf967f129429088fe43c746cdc, type: 3}
     attribute: m_Sprite
-    path: Body
+    path: Body Renderer/Body
     classID: 212
     script: {fileID: 0}
   m_SampleRate: 60
@@ -101,21 +101,21 @@ AnimationClip:
   m_ClipBindingConstant:
     genericBindings:
     - serializedVersion: 2
-      path: 0
+      path: 986255111
       attribute: 2282646479
       script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
       typeID: 114
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 0
+      path: 986255111
       attribute: 3362429112
       script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
       typeID: 114
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2073732236
+      path: 1077680819
       attribute: 0
       script: {fileID: 0}
       typeID: 212
@@ -175,7 +175,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: acceptingInput
-    path: 
+    path: Abilities
     classID: 114
     script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
   - curve:
@@ -203,7 +203,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: allowTransition
-    path: 
+    path: Abilities
     classID: 114
     script: {fileID: 11500000, guid: 8ee9bfdebca650c459115b3398f9b5b5, type: 3}
   m_EulerEditorCurves: []

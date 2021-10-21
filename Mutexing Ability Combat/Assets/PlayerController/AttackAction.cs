@@ -40,7 +40,7 @@ public class AttackAction : ICastableAbility
     {
         bool hasInput = inputBuffer;
         inputBuffer = false;
-        return hasInput;
+        return hasInput && !host.casting.IsClaimed;
     }
 
     public override void DoStartCast()

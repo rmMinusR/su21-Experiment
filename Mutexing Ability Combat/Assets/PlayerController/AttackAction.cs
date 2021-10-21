@@ -27,6 +27,9 @@ public class AttackAction : ICastableAbility
     [SerializeField] private AnimationClip[] attackAnimsGrounded;
     [SerializeField] private AnimationClip[] attackAnimsAirborne;
 
+    [Space]
+    [SerializeField] private SpellHitbox hitbox;
+
     private void _Play(PlayerHost context, int ind)
     {
         AnimationClip toPlay = context.IsGrounded ? attackAnimsGrounded[ind] : attackAnimsAirborne[ind];
@@ -53,6 +56,7 @@ public class AttackAction : ICastableAbility
         _Play(host, 0);
         acceptingInput = false;
         allowTransition = false;
+        hitbox.ForgetAffected(); //Reset so we can hit them again
     }
 
     [Header("For animator")]
@@ -102,6 +106,7 @@ public class AttackAction : ICastableAbility
             _Play(host, swingCounter);
             acceptingInput = false;
             allowTransition = false;
+            hitbox.ForgetAffected(); //Reset so we can hit them again
         }
     }
 }

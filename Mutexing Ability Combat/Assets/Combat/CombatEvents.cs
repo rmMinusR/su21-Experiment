@@ -5,10 +5,10 @@ namespace Events
 {
     public abstract class CombatEvent : Event
     {
-        public ICombatant source;
+        public IDamageDealer source;
         public IDamageable target;
 
-        public CombatEvent(ICombatant source, IDamageable target)
+        public CombatEvent(IDamageDealer source, IDamageable target)
         {
             this.source = source;
             this.target = target;
@@ -33,7 +33,7 @@ namespace Events
             set => __postMitigation = value;
         }
 
-        public DamageEvent(ICombatant source, IDamageable target, float amount)
+        public DamageEvent(IDamageDealer source, IDamageable target, float amount)
             : base(source, target)
         {
             original = amount;
@@ -58,7 +58,7 @@ namespace Events
             set => __postReduction = value;
         }
 
-        public HealEvent(ICombatant source, IDamageable target, float amount)
+        public HealEvent(IDamageDealer source, IDamageable target, float amount)
             : base(source, target)
         {
             original = amount;

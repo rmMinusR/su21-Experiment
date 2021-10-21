@@ -5,8 +5,11 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public sealed class PlayerHost : MonoBehaviour
+public sealed class PlayerHost : MonoBehaviour, IDamageDealer
 {
+    public string GetKillSourceName() => "Player";
+    public void OnRecieveEvent(Event e) { }
+
     private InputActionMap __controlsMap; public InputActionMap controlsMap => __controlsMap != null ? __controlsMap : (__controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0]);
     [NonSerialized] public InputAction controlMovement;
     [NonSerialized] public InputAction controlJump;

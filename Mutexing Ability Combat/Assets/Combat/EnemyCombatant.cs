@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyCombatant : ScopedEventListener, ICombatant
+public class EnemyCombatant : ScopedEventListener, IDamageable, IDamageDealer
 {
     [SerializeField] [InspectorReadOnly(editing = InspectorReadOnlyAttribute.Mode.ReadOnly, playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] private float health;
     [SerializeField] private float maxHealth;

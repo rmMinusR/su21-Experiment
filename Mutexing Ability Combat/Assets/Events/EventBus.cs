@@ -11,7 +11,9 @@ namespace Events
         High = 1,
         Normal = 2,
         Low = 3,
-        Lowest = 4
+        Lowest = 4,
+
+        Final = 1000
     }
 }
 
@@ -68,18 +70,11 @@ public interface IEventListener
 
 public abstract class ScopedEventListener : MonoBehaviour, IEventListener
 {
-    protected virtual void OnEnable()
-    {
-        IEnumerator<System.Type> types = GetListenedEventTypes();
-        while(types.MoveNext()) EventBus.AddListener(this, types.Current, Events.Priority.Normal);
-    }
+    protected virtual void OnEnable() => DoEventRegistration();
 
-    protected virtual void OnDisable()
-    {
-        EventBus.RemoveListenerFromAll(this);
-    }
+    protected virtual void OnDisable() => EventBus.RemoveListenerFromAll(this);
 
-    protected abstract IEnumerator<System.Type> GetListenedEventTypes();
+    protected abstract void DoEventRegistration();
 
     public abstract void OnRecieveEvent(Event e);
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerUIDriver : ScopedEventListener
+public class CastingUIDriver : ScopedEventListener
 {
     private void Update()
     {
@@ -55,10 +55,10 @@ public class PlayerUIDriver : ScopedEventListener
         obj.lifetime = messageLife;
     }
 
-    protected override IEnumerator<Type> GetListenedEventTypes()
+    protected override void DoEventRegistration()
     {
-        yield return typeof(Events.AbilityStartEvent);
-        yield return typeof(Events.AbilityEndEvent);
+        EventBus.AddListener(this, typeof(Events.AbilityStartEvent), Events.Priority.Normal);
+        EventBus.AddListener(this, typeof(Events.AbilityEndEvent  ), Events.Priority.Normal);
     }
 
     public override void OnRecieveEvent(Event e)

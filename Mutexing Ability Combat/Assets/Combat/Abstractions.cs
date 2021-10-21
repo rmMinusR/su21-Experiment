@@ -14,5 +14,5 @@ public interface IDamageable : IEventListener
 
 public interface ICombatant : IDamageable
 {
-    
+    public string GetKillSourceName();
 }

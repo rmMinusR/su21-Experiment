@@ -35,7 +35,7 @@ public sealed class PlayerHost : MonoBehaviour
 
     public PlayerAnimationDriver anim;
 
-    public PlayerUIDriver ui;
+    public CastingUIDriver ui;
 
     public BaseMovementAction baseMovement;
 

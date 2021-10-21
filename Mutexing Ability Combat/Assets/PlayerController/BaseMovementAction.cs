@@ -4,7 +4,7 @@ using UnityEngine;
 
 public sealed class BaseMovementAction : IAbility, IMovementProvider
 {
-    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    protected override void DoEventRegistration() { }
     public override void OnRecieveEvent(Event e) { }
     
     

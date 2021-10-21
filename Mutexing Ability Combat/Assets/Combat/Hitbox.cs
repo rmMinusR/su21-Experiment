@@ -14,6 +14,7 @@ public class Hitbox : MonoBehaviour, IDamagingEffect
 
     private void Awake()
     {
+        if (owner == null) owner = GetComponentInParent<ICombatant>();
         Debug.Assert(owner != null);
 
         //Make sure collider state is good

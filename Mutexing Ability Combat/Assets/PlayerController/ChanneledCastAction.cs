@@ -12,7 +12,7 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
         Debug.Assert(controlActivate != null);
     }
 
-    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    protected override void DoEventRegistration() { }
     public override void OnRecieveEvent(Event e) { }
 
     [SerializeField] private AnimationClip animCastBegin;

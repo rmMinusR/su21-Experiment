@@ -8,6 +8,7 @@ public class Hurtbox : MonoBehaviour
 
     private void Awake()
     {
+        if (owner == null) owner = GetComponentInParent<IDamageable>();
         Debug.Assert(owner != null);
     }
 }

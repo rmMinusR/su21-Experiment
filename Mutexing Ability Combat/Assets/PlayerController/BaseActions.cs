@@ -20,23 +20,20 @@ public abstract class ICastableAbility : IAbility
     protected void FixedUpdate()
     {
         //TODO how can we make this if block better?
-        if (!CurrentlyCasting && ShouldStart())
+        if (CurrentlyCasting)
         {
-            if(!EventBus.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
+            if (!ShouldEnd()) DoWhileCasting();
+            else
             {
-                _currentlyCasting = true;
-                DoStartCast();
+                //TODO should we have an event for stopping cast too?
+                _currentlyCasting = false;
+                DoEndCast();
             }
         }
-        else if (CurrentlyCasting && ShouldEnd())
+        else if (ShouldStart() && !EventBus.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
         {
-            //TODO should we have an event for stopping cast too?
-            _currentlyCasting = false;
-            DoEndCast();
-        }
-        else if (CurrentlyCasting)
-        {
-            DoWhileCasting();
+            _currentlyCasting = true;
+            DoStartCast();
         }
     }
 

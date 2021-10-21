@@ -21,7 +21,7 @@ public class AttackAction : ICastableAbility
         controlActivate.performed -= OnAttack;
     }
 
-    protected override IEnumerator<Type> GetListenedEventTypes() { yield break; }
+    protected override void DoEventRegistration() { }
     public override void OnRecieveEvent(Event e) { }
 
     [SerializeField] private AnimationClip[] attackAnimsGrounded;
@@ -66,7 +66,7 @@ public class AttackAction : ICastableAbility
     [SerializeField] private int swingCounter = 0;
     [SerializeField] private bool inputBuffer;
 
-    public bool CanAttack => acceptingInput; //TODO || host.casting.owner != this) && EventBus.Instance.DispatchEvent(new AbilityTryCastEvent());
+    public bool CanAttack => acceptingInput;
 
     public void OnAttack(InputAction.CallbackContext callbackContext)
     {

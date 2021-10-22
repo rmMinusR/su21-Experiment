@@ -31,7 +31,7 @@ public class EnemyCombatant : ScopedEventListener, IDamageable, IDamageDealer
         }
         else if (@event is Events.HealEvent hl && hl.target == this)
         {
-            health -= hl.postMitigation;
+            health += hl.postMitigation;
         }
     }
 

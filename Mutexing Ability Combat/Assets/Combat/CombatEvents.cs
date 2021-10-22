@@ -64,4 +64,42 @@ namespace Events
             original = amount;
         }
     }
+
+    public class DeathEvent : CombatEvent
+    {
+        public DeathEvent(IDamageDealer source, IDamageable target) : base(source, target)
+        {
+        }
+    }
+
+
+
+
+    public abstract class StatusEvent : Event //TODO should this be a CombatEvent instead?
+    {
+        public IStatusEffect effect;
+        public IStatusEffectable target;
+
+        public StatusEvent(IStatusEffect effect, IStatusEffectable target)
+        {
+            this.effect = effect;
+            this.target = target;
+        }
+    }
+
+    public class StatusStartEvent : StatusEvent
+    {
+        //TODO add source?
+
+        public StatusStartEvent(IStatusEffect effect, IStatusEffectable target) : base(effect, target)
+        {
+        }
+    }
+
+    public class StatusStopEvent : StatusEvent
+    {
+        public StatusStopEvent(IStatusEffect effect, IStatusEffectable target) : base(effect, target)
+        {
+        }
+    }
 }

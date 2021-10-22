@@ -1,18 +1,25 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Hitbox, spell, projectile, attack
+/// </summary>
 public interface IDamagingEffect
 {
     public IDamageDealer GetSource();
     public float GetDamage();
 }
 
+/// <summary>
+/// Has a health pool: player, enemy, breakable window, tree
+/// </summary>
 public interface IDamageable : IEventListener
 {
     public bool ShowHealthUI();
     public float GetHealth();
     public float GetMaxHealth();
     public bool IsAlive();
+    public string GetDisplayName();
 }
 
 public abstract class IDamagingSingleEffector : MonoBehaviour, IDamagingEffect
@@ -44,7 +51,38 @@ public abstract class IDamagingSingleEffector : MonoBehaviour, IDamagingEffect
     protected virtual void ApplyEffects(IDamageable target) => EventBus.DispatchEvent(new Events.DamageEvent(GetSource(), target, GetDamage()));
 }
 
+/// <summary>
+/// Player, enemy, dart trap
+/// </summary>
 public interface IDamageDealer : IEventListener
 {
-    public string GetKillSourceName();
+    public string GetDisplayName();
+}
+
+
+
+
+
+public interface IStatusEffectable
+{
+    public void ApplyStatus(IStatusEffect statusEffect);
+    public void RemoveStatus(IStatusEffect statusEffect);
+    public void RemoveAllStatuses();
+}
+
+[System.Serializable]
+public abstract class IStatusEffect : IEventListener
+{
+    [SerializeField] protected IStatusEffectable owner;
+
+    public virtual void OnStart(IStatusEffectable owner)
+    {
+        this.owner = owner;
+    }
+
+    public virtual void OnTick() { }
+
+    public abstract void OnRecieveEvent(Event e);
+
+    public virtual void OnStop() { }
 }

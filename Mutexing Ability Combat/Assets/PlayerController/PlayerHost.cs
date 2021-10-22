@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 
 public sealed class PlayerHost : MonoBehaviour, IDamageDealer
 {
-    public string GetKillSourceName() => "Player";
+    public string GetDisplayName() => "Player";
     public void OnRecieveEvent(Event e) { }
 
     private InputActionMap __controlsMap; public InputActionMap controlsMap => __controlsMap != null ? __controlsMap : (__controlsMap = GetComponent<PlayerInput>().actions.actionMaps[0]);

@@ -25,7 +25,6 @@ public abstract class ICastableAbility : IAbility
             if (!ShouldEnd()) DoWhileCasting();
             else
             {
-                //TODO should we have an event for stopping cast too?
                 _currentlyCasting = false;
                 DoEndCast();
             }

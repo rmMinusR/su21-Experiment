@@ -412,7 +412,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: bd3cb4af8406d4436a2ae8c2aafe1f8d, type: 3}
+  m_Sprite: {fileID: -9095717837082945937, guid: 34587324d412940a79d530020c957dc0, type: 3}
   m_Color: {r: 1, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1005,6 +1005,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 0
   maxHealth: 250
+  damageNumberPrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
+  damageNumberSource: {fileID: 1061950127}
+  damageNumberLife: 2
 --- !u!1 &1178138496
 GameObject:
   m_ObjectHideFlags: 0

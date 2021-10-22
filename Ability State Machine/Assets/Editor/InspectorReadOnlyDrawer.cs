@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 [CustomPropertyDrawer(typeof(InspectorReadOnlyAttribute))]
@@ -11,12 +11,12 @@ public class InspectorReadOnlyDrawer : PropertyDrawer
     }
 
     public override void OnGUI(Rect position,
-                                SerializedProperty property,
-                                GUIContent label)
+                               SerializedProperty property,
+                               GUIContent label)
     {
         bool isReadOnly = true;
-        if (Application.isPlaying) isReadOnly = (attribute as InspectorReadOnlyAttribute).playMode;
-        else                       isReadOnly = (attribute as InspectorReadOnlyAttribute).editMode;
+        if (Application.isPlaying) isReadOnly = (attribute as InspectorReadOnlyAttribute).playing == InspectorReadOnlyAttribute.Mode.ReadOnly;
+        else                       isReadOnly = (attribute as InspectorReadOnlyAttribute).editing == InspectorReadOnlyAttribute.Mode.ReadOnly;
 
         if (isReadOnly) GUI.enabled = false;
         EditorGUI.PropertyField(position, property, label, true);

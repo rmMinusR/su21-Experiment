@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -87,4 +88,52 @@ public abstract class IStatusEffect : IEventListener
     public abstract void OnRecieveEvent(Event e);
 
     public virtual void OnStop() { }
+}
+
+
+
+
+[RequireComponent(typeof(Collider2D))]
+public abstract class IProjectile : MonoBehaviour
+{
+    [NonSerialized] public Facing facing;
+    [NonSerialized] public float chargeRatio;
+    [HideInInspector] public IDamageDealer source;
+
+    [SerializeField] protected float damage;
+    [SerializeField] protected float speed;
+
+    [SerializeField] [InspectorReadOnly(editing = InspectorReadOnlyAttribute.Mode.ReadOnly, playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] protected Vector2 velocity;
+
+    protected virtual void Start()
+    {
+        velocity = facing==Facing.Right ? Vector2.right : Vector2.left;
+        velocity *= speed;
+    }
+
+    protected virtual void FixedUpdate()
+    {
+        transform.position += (Vector3) velocity * Time.fixedDeltaTime;
+    }
+
+    protected void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log(other.gameObject);
+
+        if (other.GetComponent<IDamageable>() is IDamageable target && ShouldCollide(target))
+        {
+            ProcessEntityCollision(target);
+            Destroy(gameObject);
+        }
+        else if (!other.isTrigger && (other.gameObject.isStatic || other.GetComponent<Rigidbody2D>() == null))
+        {
+            //FIXME where do we intersect?
+            ProcessGroundCollision();
+            Destroy(gameObject);
+        }
+    }
+
+    protected abstract bool ShouldCollide(IDamageable target);
+    protected abstract void ProcessEntityCollision(IDamageable target);
+    protected abstract void ProcessGroundCollision();
 }

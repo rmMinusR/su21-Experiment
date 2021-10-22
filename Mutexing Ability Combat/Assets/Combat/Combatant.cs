@@ -63,8 +63,8 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     #region Status system
 
-    //FIXME needs custom serialization + editor
-    [SerializeField] protected List<IStatusEffect> statusEffects;
+    //FIXME needs custom serialization + editor to handle polymorphism
+    [SerializeField] protected List<IStatusEffect> statusEffects = new List<IStatusEffect>();
 
     public void ApplyStatus(IStatusEffect effect, IDamageDealer source)
     {

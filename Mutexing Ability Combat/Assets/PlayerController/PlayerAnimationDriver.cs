@@ -14,7 +14,7 @@ public class PlayerAnimationDriver : MonoBehaviour
 
     private BaseMovementAction fallbackSource => host.baseMovement;
 
-    public Facing currentFacing;
+    public Facing currentFacing = Facing.Right;
 
     private void Start()
     {

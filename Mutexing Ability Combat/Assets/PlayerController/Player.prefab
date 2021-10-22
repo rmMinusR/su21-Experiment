@@ -71,6 +71,36 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damage: 1
+--- !u!1 &3474515094010601469
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1738393824918981244}
+  m_Layer: 0
+  m_Name: Spellcast origin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1738393824918981244
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3474515094010601469}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.29999995, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 8468442695471175289}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8468442695471175294
 GameObject:
   m_ObjectHideFlags: 0
@@ -102,6 +132,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 215359844}
+  - {fileID: 1738393824918981244}
   m_Father: {fileID: 8468442695502157641}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -186,8 +217,6 @@ MonoBehaviour:
   hitbox: {fileID: 215359845}
   ownedMutexCast:
     _owner: {fileID: 0}
-  velocityOverride: {x: 0, y: 0}
-  overrideSmoothing: 0.5
   acceptingInput: 1
   allowTransition: 0
   activeUntil: 0
@@ -219,6 +248,7 @@ MonoBehaviour:
   channelStartTime: 0
   isGood: 0
   exitReason: 0
+  fireballPrefab: {fileID: 2791849194506415621, guid: 37d8aa07a807236498e4e806abd81df9, type: 3}
 --- !u!1 &8468442695502157632
 GameObject:
   m_ObjectHideFlags: 0
@@ -350,6 +380,7 @@ MonoBehaviour:
     stable: 0
     delta: 0
   facing: 0
+  spellcastOrigin: {fileID: 1738393824918981244}
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
   _localMotionFalloff: 0.1

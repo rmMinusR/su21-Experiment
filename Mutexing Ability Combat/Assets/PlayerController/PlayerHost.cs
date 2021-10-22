@@ -70,6 +70,8 @@ public sealed class PlayerHost : MonoBehaviour, IDamageDealer
     public TimeParam time;
     public Facing facing;
 
+    public Transform spellcastOrigin;
+
     public readonly Mutex<IAbility> casting = new Mutex<IAbility>();
     public readonly Mutex<IMovementProvider> moving  = new Mutex<IMovementProvider>();
     

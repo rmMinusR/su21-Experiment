@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ChanneledCastAction : ICastableAbility, IMovementProvider
+public class ChanneledFireballSpell : ICastableAbility, IMovementProvider
 {
     private InputAction controlActivate;
     private void Awake()
@@ -37,7 +37,7 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
 
         host.anim.PlayAnimation(animCastBegin, immediately: true);
         host.anim.PlayAnimation(animCastLoop, immediately: false);
-        host.ui.SetCurrentAbility(null, "Channeled cast", maxChannelTime);
+        host.ui.SetCurrentAbility(null, "Channeled Fireball", maxChannelTime);
     }
 
     [Header("For animator")]
@@ -83,13 +83,21 @@ public class ChanneledCastAction : ICastableAbility, IMovementProvider
 
     public override bool ShouldEnd() => !isGood;
 
+    [SerializeField] private IProjectile fireballPrefab;
     public override void DoEndCast()
     {
+        //Update state
         ownedMutexCast.Release();
         ownedMutexMove.Release();
 
         EventBus.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
         nextTimeCastable = host.time.stable + cooldown;
+
+        //Spawn fireball
+        float castProgress = (host.time.stable - channelStartTime) / maxChannelTime;
+        IProjectile fireball = Instantiate(fireballPrefab, host.spellcastOrigin.transform.position, Quaternion.identity).GetComponent<IProjectile>();
+        fireball.facing = host.anim.currentFacing;
+        fireball.chargeRatio = castProgress;
     }
 
     public override void WriteAnimations(PlayerAnimationDriver anim)

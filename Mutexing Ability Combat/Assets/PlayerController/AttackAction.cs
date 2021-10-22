@@ -60,8 +60,6 @@ public class AttackAction : ICastableAbility
     }
 
     [Header("For animator")]
-    [SerializeField] private Vector2 velocityOverride;
-    [SerializeField] [Range(0, 1)] private float overrideSmoothing;
     [SerializeField] private bool acceptingInput = true;
     [SerializeField] private bool allowTransition;
 
@@ -75,16 +73,6 @@ public class AttackAction : ICastableAbility
     public void OnAttack(InputAction.CallbackContext callbackContext)
     {
         if(CanAttack) inputBuffer = true;
-    }
-
-    public Vector2 DoPhysics(PlayerHost context, Vector2 velocity)
-    {
-        //Apply gravity
-        velocity += Physics2D.gravity * context.time.delta;
-
-        velocity = Vector2.Lerp(velocityOverride, velocity, Mathf.Pow(overrideSmoothing, context.time.delta));
-
-        return velocity;
     }
 
     public override bool ShouldEnd() => host.time.stable >= activeUntil; //TODO check not playing? or that exit conditions in animator are met?

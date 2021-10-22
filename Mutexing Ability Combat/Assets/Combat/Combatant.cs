@@ -58,7 +58,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     public virtual void Update()
     {
         ShowHealthUI();
-        foreach (IStatusEffect effect in statusEffects) effect.OnTick();
+        foreach (IStatusEffect effect in statusEffects) effect.OnTick(Time.deltaTime);
     }
 
     #region Status system
@@ -66,13 +66,13 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     //FIXME needs custom serialization + editor
     [SerializeField] protected List<IStatusEffect> statusEffects;
 
-    public void ApplyStatus(IStatusEffect effect)
+    public void ApplyStatus(IStatusEffect effect, IDamageDealer source)
     {
         if(!statusEffects.Contains(effect) && !statusEffects.Any(x => x.GetType() == effect.GetType()))
         {
             if (!EventBus.DispatchEvent(new Events.StatusStartEvent(effect, this)).isCancelled)
             {
-                effect.OnStart(this);
+                effect.OnStart(this, source);
                 statusEffects.Add(effect);
             }
         }

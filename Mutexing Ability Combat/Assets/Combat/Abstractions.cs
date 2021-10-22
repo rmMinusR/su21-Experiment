@@ -65,7 +65,7 @@ public interface IDamageDealer : IEventListener
 
 public interface IStatusEffectable
 {
-    public void ApplyStatus(IStatusEffect statusEffect);
+    public void ApplyStatus(IStatusEffect effect, IDamageDealer source);
     public void RemoveStatus(IStatusEffect statusEffect);
     public void RemoveAllStatuses();
 }
@@ -74,13 +74,15 @@ public interface IStatusEffectable
 public abstract class IStatusEffect : IEventListener
 {
     [SerializeField] protected IStatusEffectable owner;
+    [SerializeField] protected IDamageDealer source;
 
-    public virtual void OnStart(IStatusEffectable owner)
+    public virtual void OnStart(IStatusEffectable owner, IDamageDealer source)
     {
         this.owner = owner;
+        this.source = source;
     }
 
-    public virtual void OnTick() { }
+    public virtual void OnTick(float deltaTime) { }
 
     public abstract void OnRecieveEvent(Event e);
 

@@ -197,11 +197,11 @@ public sealed class PlayerHost : MonoBehaviour, IDamageDealer
 
         //Movement
         Events.MoveQueryEvent moveQuery = new Events.MoveQueryEvent(this, (moving.IsClaimed ? moving.Owner : baseMovement).DoMovement(velocity, input));
-        EventBus.DispatchEvent(moveQuery);
+        EventBus.DispatchImmediately(moveQuery);
         if(!moveQuery.isCancelled) velocity = moveQuery.velocity;
 
         Events.KinematicsEvent kinematicsEvent = new Events.KinematicsEvent(transform.position, velocity);
-        EventBus.DispatchEvent(kinematicsEvent);
+        EventBus.DispatchImmediately(kinematicsEvent);
 
         return velocity;
     }

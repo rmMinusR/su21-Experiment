@@ -90,7 +90,7 @@ public class ChanneledFireballSpell : ICastableAbility, IMovementProvider
         ownedMutexCast.Release();
         ownedMutexMove.Release();
 
-        EventBus.DispatchEvent(new Events.AbilityEndEvent(this, exitReason, true));
+        EventBus.Dispatch(new Events.AbilityEndEvent(this, exitReason, true));
         nextTimeCastable = host.time.stable + cooldown;
 
         //Spawn fireball

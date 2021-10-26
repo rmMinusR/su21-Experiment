@@ -27,7 +27,7 @@ public class RepeatingDamageStatus : IStatusEffect, IDamagingEffect
         timeToNextTick -= deltaTime;
         if (timeToNextTick <= 0)
         {
-            EventBus.DispatchEvent(new Events.DamageEvent(source, this, (IDamageable)owner, damagePerTick));
+            EventBus.Dispatch(new Events.DamageEvent(source, this, (IDamageable)owner, damagePerTick));
             timeToNextTick = 1 / ticksPerSecond;
         }
 

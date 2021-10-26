@@ -41,7 +41,7 @@ namespace Events
 
         private void ApplyEffects()
         {
-            foreach (Event e in effects) EventBus.DispatchEvent(e);
+            foreach (Event e in effects) EventBus.Dispatch(e);
         }
     }
 

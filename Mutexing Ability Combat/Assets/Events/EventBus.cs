@@ -17,32 +17,37 @@ namespace Events
     }
 }
 
-public sealed class EventBus
+public sealed class EventBus : MonoBehaviour
 {
-    #region Listeners
-    private static Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> buses = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>();
+    #region Singleton
 
-    public static void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority)
-    {
-        SimplePriorityQueue<IEventListener, Events.Priority> pq = buses.GetOrCreate(eventType);
-        if(!pq.Contains(listener)) pq.Enqueue(listener, priority);
-    }
-    public static void RemoveListener(IEventListener listener, System.Type eventType) => buses[eventType].TryRemove(listener);
-    public static void RemoveListenerFromAll(IEventListener listener)
-    {
-        foreach(SimplePriorityQueue<IEventListener, Events.Priority> bus in buses.Values) bus.TryRemove(listener);
-    }
+    private static EventBus __instance = null;
+    public static EventBus Instance => __instance != null ? __instance : (__instance = new GameObject("EventBus").AddComponent<EventBus>()); //NOTE: Causes bad cleanup message
 
     #endregion
 
-    public static T DispatchEvent<T>(T @event) where T : Event
+    #region Listeners
+    private Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> buses = new Dictionary<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>>();
+
+    public static void AddListener(IEventListener listener, System.Type eventType, Events.Priority priority)
+    {
+        SimplePriorityQueue<IEventListener, Events.Priority> pq = Instance.buses.GetOrCreate(eventType);
+        if(!pq.Contains(listener)) pq.Enqueue(listener, priority);
+    }
+    public static void RemoveListener(IEventListener listener, System.Type eventType) => Instance.buses[eventType].TryRemove(listener);
+    public static void RemoveListenerFromAll(IEventListener listener)
+    {
+        foreach(SimplePriorityQueue<IEventListener, Events.Priority> bus in Instance.buses.Values) bus.TryRemove(listener);
+    }
+
+    public static T DispatchImmediately<T>(T @event) where T : Event
     {
         @event.OnPreDispatch();
         int processCount = 0;
 
-        foreach(KeyValuePair<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> pair in buses)
+        foreach (KeyValuePair<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> pair in Instance.buses)
         {
-            if(pair.Key.IsAssignableFrom(@event.GetType()))
+            if (pair.Key.IsAssignableFrom(@event.GetType()))
             {
                 foreach (IEventListener i in pair.Value)
                 {
@@ -62,6 +67,32 @@ public sealed class EventBus
         @event.OnPostDispatch();
         return @event;
     }
+
+    #endregion
+
+    private void Update()
+    {
+        DispatchBufferedEvents();
+    }
+
+    #region Buffering system
+
+    private Queue<Event> eventBuffer = new Queue<Event>();
+
+    private void DispatchBufferedEvents()
+    {
+        while(eventBuffer.Count > 0)
+        {
+            DispatchImmediately(eventBuffer.Dequeue());
+        }
+    }
+
+    public static void Dispatch(Event @event)
+    {
+        if (!Instance.eventBuffer.Contains(@event)) Instance.eventBuffer.Enqueue(@event);
+    }
+
+    #endregion
 }
 
 

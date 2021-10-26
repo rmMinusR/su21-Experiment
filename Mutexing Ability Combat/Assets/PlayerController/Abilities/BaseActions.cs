@@ -29,7 +29,7 @@ public abstract class ICastableAbility : IAbility
                 DoEndCast();
             }
         }
-        else if (ShouldStart() && !EventBus.DispatchEvent(new Events.AbilityTryCastEvent(this)).isCancelled)
+        else if (ShouldStart() && !EventBus.DispatchImmediately(new Events.AbilityTryCastEvent(this)).isCancelled)
         {
             _currentlyCasting = true;
             DoStartCast();

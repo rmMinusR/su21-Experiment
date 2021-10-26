@@ -27,7 +27,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
         if(damage.target == this)
         {
             health -= damage.postMitigation;
-            if (!IsAlive()) EventBus.DispatchEvent(new Events.DeathEvent(damage.source, damage.target));
+            if (!IsAlive()) EventBus.Dispatch(new Events.DeathEvent(damage.source, damage.target));
         }
     }
 
@@ -106,7 +106,6 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     {
         if (statusEffects.Contains(sstop.effect))
         {
-            EventBus.DispatchEvent(new Events.StatusStopEvent(sstop.effect, this));
             statusEffects.Remove(sstop.effect);
             sstop.effect.OnStop();
         }
@@ -116,7 +115,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     {
         foreach (IStatusEffect effect in statusEffects)
         {
-            EventBus.DispatchEvent(new Events.StatusStopEvent(effect, this));
+            EventBus.Dispatch(new Events.StatusStopEvent(effect, this));
             effect.OnStop();
         }
 

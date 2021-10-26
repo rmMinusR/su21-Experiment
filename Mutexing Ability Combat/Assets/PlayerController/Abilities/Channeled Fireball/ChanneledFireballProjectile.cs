@@ -35,7 +35,7 @@ public sealed class ChanneledFireballProjectile : IProjectile, IDamagingEffect
         };
         if (target is IStatusEffectable statusEffectable) effects.Add(new Events.StatusStartEvent(dotStatus, source, statusEffectable));
 
-        EventBus.DispatchEvent(new Events.SpellAffectEvent(this, source, target, effects));
+        EventBus.Dispatch(new Events.SpellAffectEvent(this, source, target, effects));
     }
 
     public IDamageDealer GetSource() => source;

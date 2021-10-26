@@ -94,7 +94,7 @@ public class ChanneledFireballSpell : ICastableAbility, IMovementProvider
         nextTimeCastable = host.time.stable + cooldown;
 
         //Spawn fireball
-        float castProgress = (host.time.stable - channelStartTime) / maxChannelTime;
+        float castProgress = Mathf.Clamp01( (host.time.stable - channelStartTime) / maxChannelTime );
         IProjectile fireball = Instantiate(fireballPrefab, host.spellcastOrigin.transform.position, Quaternion.identity).GetComponent<IProjectile>();
         fireball.facing = host.anim.currentFacing;
         fireball.chargeRatio = castProgress;

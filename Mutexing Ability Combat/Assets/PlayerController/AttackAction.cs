@@ -64,9 +64,9 @@ public class AttackAction : ICastableAbility
     [SerializeField] private bool allowTransition;
 
     [Header("State data")]
-    [SerializeField] private float activeUntil = 0;
-    [SerializeField] private int swingCounter = 0;
-    [SerializeField] private bool inputBuffer;
+    [SerializeField] [InspectorReadOnly] private float activeUntil = 0;
+    [SerializeField] [InspectorReadOnly] private int swingCounter = 0;
+    [SerializeField] [InspectorReadOnly(playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] private bool inputBuffer;
 
     public bool CanAttack => acceptingInput;
 

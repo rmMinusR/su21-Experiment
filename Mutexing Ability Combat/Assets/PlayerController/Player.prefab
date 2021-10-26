@@ -25,12 +25,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 215359843}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 8468442695471175289}
-  m_RootOrder: 0
+  m_Father: {fileID: 8468442695537463970}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!61 &215359846
 BoxCollider2D:
@@ -95,10 +95,10 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3474515094010601469}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.29999995, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 8468442695471175289}
+  m_Father: {fileID: 8468442695537463970}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8468442695471175294
@@ -130,9 +130,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children:
-  - {fileID: 215359844}
-  - {fileID: 1738393824918981244}
+  m_Children: []
   m_Father: {fileID: 8468442695502157641}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -237,7 +235,7 @@ MonoBehaviour:
   _currentlyCasting: 0
   animCastBegin: {fileID: 7400000, guid: d56aa644739eca64c9c9e7c5bb598907, type: 2}
   animCastLoop: {fileID: 7400000, guid: 5310b79e644d1be42a5a097933eb838e, type: 2}
-  maxChannelTime: 2.5
+  maxChannelTime: 1.5
   cooldown: 1
   ownedMutexCast:
     _owner: {fileID: 0}
@@ -493,7 +491,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8468442695537463970}
   m_Layer: 0
-  m_Name: Body Renderer
+  m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -511,6 +509,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 8468442696083603849}
+  - {fileID: 1738393824918981244}
+  - {fileID: 215359844}
   m_Father: {fileID: 8468442695502157641}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -680,7 +680,7 @@ GameObject:
   - component: {fileID: 8468442696083603849}
   - component: {fileID: 8468442695901566341}
   m_Layer: 0
-  m_Name: Body
+  m_Name: Renderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

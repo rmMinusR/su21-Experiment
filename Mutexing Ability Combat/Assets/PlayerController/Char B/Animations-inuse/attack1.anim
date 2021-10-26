@@ -107,7 +107,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_IsActive
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 1
     script: {fileID: 0}
   - curve:
@@ -144,7 +144,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Offset.y
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -181,7 +181,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Size.y
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -218,7 +218,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Offset.x
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -255,7 +255,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Size.x
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   m_PPtrCurves:
@@ -273,7 +273,7 @@ AnimationClip:
     - time: 0.41666666
       value: {fileID: 21300000, guid: 3b03931bc00b1364f900653325cdce0a, type: 3}
     attribute: m_Sprite
-    path: Body Renderer/Body
+    path: Body/Renderer
     classID: 212
     script: {fileID: 0}
   m_SampleRate: 60
@@ -298,42 +298,42 @@ AnimationClip:
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2405938145
+      path: 716596871
       attribute: 2086281974
       script: {fileID: 0}
       typeID: 1
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2405938145
+      path: 716596871
       attribute: 1872933342
       script: {fileID: 0}
       typeID: 61
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2405938145
+      path: 716596871
       attribute: 2368279999
       script: {fileID: 0}
       typeID: 61
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2405938145
+      path: 716596871
       attribute: 413499720
       script: {fileID: 0}
       typeID: 61
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 2405938145
+      path: 716596871
       attribute: 4197328169
       script: {fileID: 0}
       typeID: 61
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 1077680819
+      path: 1387760418
       attribute: 0
       script: {fileID: 0}
       typeID: 212
@@ -457,7 +457,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_IsActive
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 1
     script: {fileID: 0}
   - curve:
@@ -494,7 +494,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Offset.y
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -531,7 +531,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Size.y
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -568,7 +568,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Offset.x
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   - curve:
@@ -605,7 +605,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Size.x
-    path: Abilities/Hitbox
+    path: Body/Hitbox
     classID: 61
     script: {fileID: 0}
   m_EulerEditorCurves: []

@@ -94,6 +94,7 @@ public abstract class IStatusEffect : IEventListener
 
 
 [RequireComponent(typeof(Collider2D))]
+[RequireComponent(typeof(Rigidbody2D))]
 public abstract class IProjectile : MonoBehaviour
 {
     [NonSerialized] public Facing facing;
@@ -103,37 +104,49 @@ public abstract class IProjectile : MonoBehaviour
     [SerializeField] protected float damage;
     [SerializeField] protected float speed;
 
-    [SerializeField] [InspectorReadOnly(editing = InspectorReadOnlyAttribute.Mode.ReadOnly, playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] protected Vector2 velocity;
+    [SerializeField] [InspectorReadOnly(playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] protected float curLifetime;
+    [SerializeField] [Min(0)] protected float maxLifetime;
+
+    private Rigidbody2D __rb;
+    protected Rigidbody2D rb => __rb != null ? __rb : (__rb = GetComponent<Rigidbody2D>());
+
+    protected Vector2 velocity
+    {
+        get => rb.velocity;
+        set => rb.velocity = value;
+    }
 
     protected virtual void Start()
     {
-        velocity = facing==Facing.Right ? Vector2.right : Vector2.left;
-        velocity *= speed;
+        velocity = ( facing==Facing.Right ? Vector2.right : Vector2.left ) * speed;
+        curLifetime = maxLifetime;
     }
 
-    protected virtual void FixedUpdate()
+    protected virtual void Update()
     {
-        transform.position += (Vector3) velocity * Time.fixedDeltaTime;
+        curLifetime -= Time.deltaTime;
+        if (curLifetime <= 0) OnExpire();
     }
 
-    protected void OnTriggerEnter2D(Collider2D other)
+    protected void OnTriggerStay2D(Collider2D other)
     {
-        Debug.Log(other.gameObject);
-
         if (other.GetComponent<IDamageable>() is IDamageable target && ShouldCollide(target))
         {
             ProcessEntityCollision(target);
-            Destroy(gameObject);
+            AfterCollision();
         }
         else if (!other.isTrigger && (other.gameObject.isStatic || other.GetComponent<Rigidbody2D>() == null))
         {
             //FIXME where do we intersect?
             ProcessGroundCollision();
-            Destroy(gameObject);
+            AfterCollision();
         }
     }
 
     protected abstract bool ShouldCollide(IDamageable target);
     protected abstract void ProcessEntityCollision(IDamageable target);
     protected abstract void ProcessGroundCollision();
+
+    protected virtual void AfterCollision() => Destroy(gameObject);
+    protected virtual void OnExpire() => Destroy(gameObject);
 }

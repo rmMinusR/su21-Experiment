@@ -30,7 +30,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: Abilities/Spellcast origin
+    path: Body/Spellcast origin
   m_ScaleCurves: []
   m_FloatCurves: []
   m_PPtrCurves:
@@ -46,7 +46,7 @@ AnimationClip:
     - time: 0.6
       value: {fileID: 21300000, guid: 779f664fb88344c4398ea4ef61842af7, type: 3}
     attribute: m_Sprite
-    path: Body Renderer/Body
+    path: Body/Renderer
     classID: 212
     script: {fileID: 0}
   m_SampleRate: 60
@@ -57,14 +57,14 @@ AnimationClip:
   m_ClipBindingConstant:
     genericBindings:
     - serializedVersion: 2
-      path: 1077680819
+      path: 1387760418
       attribute: 0
       script: {fileID: 0}
       typeID: 212
       customType: 23
       isPPtrCurve: 1
     - serializedVersion: 2
-      path: 3830635803
+      path: 3105826577
       attribute: 1
       script: {fileID: 0}
       typeID: 4
@@ -113,7 +113,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.x
-    path: Abilities/Spellcast origin
+    path: Body/Spellcast origin
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -132,7 +132,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.y
-    path: Abilities/Spellcast origin
+    path: Body/Spellcast origin
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -151,7 +151,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.z
-    path: Abilities/Spellcast origin
+    path: Body/Spellcast origin
     classID: 4
     script: {fileID: 0}
   m_EulerEditorCurves: []

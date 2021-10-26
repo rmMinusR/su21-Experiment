@@ -49,7 +49,7 @@ public abstract class IDamagingSingleEffector : MonoBehaviour, IDamagingEffect
         }
     }
 
-    protected virtual void ApplyEffects(IDamageable target) => EventBus.DispatchEvent(new Events.DamageEvent(GetSource(), target, GetDamage()));
+    protected virtual void ApplyEffects(IDamageable target) => EventBus.DispatchEvent(new Events.DamageEvent(GetSource(), this, target, GetDamage()));
 }
 
 /// <summary>
@@ -64,11 +64,15 @@ public interface IDamageDealer : IEventListener
 
 
 
-public interface IStatusEffectable
+public interface IStatusEffectable : IEventListener
 {
-    public void ApplyStatus(IStatusEffect effect, IDamageDealer source);
-    public void RemoveStatus(IStatusEffect statusEffect);
     public void RemoveAllStatuses();
+}
+
+public static class IStatusEffectableExt
+{
+    public static void ApplyStatus(this IStatusEffectable target, IStatusEffect effect, IDamageDealer source) => EventBus.DispatchEvent(new Events.StatusStartEvent(effect, source, target));
+    public static void RemoveStatus(this IStatusEffectable target, IStatusEffect effect) => EventBus.DispatchEvent(new Events.StatusStopEvent(effect, target));
 }
 
 [System.Serializable]

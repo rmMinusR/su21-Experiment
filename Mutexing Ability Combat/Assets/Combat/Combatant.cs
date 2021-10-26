@@ -20,44 +20,62 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     public float GetMaxHealth() => maxHealth;
     public bool IsAlive() => health > 0;
 
+    public abstract bool ShowHealthUI();
+
+    private void HandleEvent(Events.DamageEvent damage)
+    {
+        if(damage.target == this)
+        {
+            health -= damage.postMitigation;
+            if (!IsAlive()) EventBus.DispatchEvent(new Events.DeathEvent(damage.source, damage.target));
+        }
+    }
+
+    private void HandleEvent(Events.HealEvent heal)
+    {
+        if (heal.target == this)
+        {
+            health += heal.postMitigation;
+        }
+    }
+
+    private void HandleEvent(Events.DeathEvent death)
+    {
+        if(death.target == this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    #endregion
+
     protected override void DoEventRegistration()
     {
-        EventBus.AddListener(this, typeof(Events.DamageEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events.  HealEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events. DeathEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.     DamageEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.       HealEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.      DeathEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.StatusStartEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events. StatusStopEvent), Events.Priority.Final);
     }
 
     public override void OnRecieveEvent(Event @event)
     {
         if (!@event.isCancelled)
         {
-
-            if (@event is Events.DamageEvent dmg && dmg.target == this)
-            {
-                health -= dmg.postMitigation;
-                if(!IsAlive()) EventBus.DispatchEvent(new Events.DeathEvent(dmg.source, dmg.target));
-            }
-            else if (@event is Events.HealEvent heal && heal.target == this)
-            {
-                health += heal.postMitigation;
-            }
-            else if (@event is Events.DeathEvent death && death.target == this)
-            {
-                Destroy(gameObject);
-            }
-
+                 if (@event is Events.     DamageEvent dmg   ) HandleEvent(dmg   );
+            else if (@event is Events.       HealEvent heal  ) HandleEvent(heal  );
+            else if (@event is Events.      DeathEvent death ) HandleEvent(death );
+            else if (@event is Events.StatusStartEvent sstart) HandleEvent(sstart);
+            else if (@event is Events. StatusStopEvent sstop ) HandleEvent(sstop );
         }
     }
-
-    public abstract bool ShowHealthUI();
-
-    #endregion
 
     public abstract string GetDisplayName();
 
     public virtual void Update()
     {
         ShowHealthUI();
+
         foreach (IStatusEffect effect in statusEffects) effect.OnTick(Time.deltaTime);
     }
 
@@ -66,25 +84,22 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     //FIXME needs custom serialization + editor to handle polymorphism
     [SerializeField] protected List<IStatusEffect> statusEffects = new List<IStatusEffect>();
 
-    public void ApplyStatus(IStatusEffect effect, IDamageDealer source)
+    private void HandleEvent(Events.StatusStartEvent sstart)
     {
-        if(!statusEffects.Contains(effect) && !statusEffects.Any(x => x.GetType() == effect.GetType()))
+        if(!statusEffects.Contains(sstart.effect) && !statusEffects.Any(x => x.GetType() == sstart.effect.GetType()))
         {
-            if (!EventBus.DispatchEvent(new Events.StatusStartEvent(effect, this)).isCancelled)
-            {
-                effect.OnStart(this, source);
-                statusEffects.Add(effect);
-            }
+            sstart.effect.OnStart(this, sstart.source);
+            statusEffects.Add(sstart.effect);
         }
     }
 
-    public void RemoveStatus(IStatusEffect effect)
+    private void HandleEvent(Events.StatusStopEvent sstop)
     {
-        if(statusEffects.Contains(effect))
+        if (statusEffects.Contains(sstop.effect))
         {
-            EventBus.DispatchEvent(new Events.StatusStopEvent(effect, this));
-            statusEffects.Remove(effect);
-            effect.OnStop();
+            EventBus.DispatchEvent(new Events.StatusStopEvent(sstop.effect, this));
+            statusEffects.Remove(sstop.effect);
+            sstop.effect.OnStop();
         }
     }
 

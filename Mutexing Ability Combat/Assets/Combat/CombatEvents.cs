@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Events
@@ -15,10 +16,40 @@ namespace Events
         }
     }
 
+    public class SpellAffectEvent : CombatEvent, IEventListener
+    {
+        public IDamagingEffect spell;
+        public List<Event> effects;
+
+        public SpellAffectEvent(IDamagingEffect spell, IDamageDealer source, IDamageable target, List<Event> effects) : base(source, target)
+        {
+            this.spell = spell;
+            this.effects = effects;
+        }
+
+        public override void OnPreDispatch() => EventBus.AddListener(this, typeof(SpellAffectEvent), Priority.Final);
+
+        public void OnRecieveEvent(Event e)
+        {
+            if(e == this)
+            {
+                ApplyEffects();
+            }
+        }
+
+        public override void OnPostDispatch() => EventBus.RemoveListener(this, typeof(SpellAffectEvent));
+
+        private void ApplyEffects()
+        {
+            foreach (Event e in effects) EventBus.DispatchEvent(e);
+        }
+    }
+
     public class DamageEvent : CombatEvent
     {
         public readonly float original;
-        
+        public IDamagingEffect effect;
+
         private float? __postAmplification;
         public float postAmplification
         {
@@ -33,9 +64,10 @@ namespace Events
             set => __postMitigation = value;
         }
 
-        public DamageEvent(IDamageDealer source, IDamageable target, float amount)
+        public DamageEvent(IDamageDealer source, IDamagingEffect effect, IDamageable target, float amount)
             : base(source, target)
         {
+            this.effect = effect;
             original = amount;
         }
     }
@@ -89,10 +121,11 @@ namespace Events
 
     public class StatusStartEvent : StatusEvent
     {
-        //TODO add source?
+        public IDamageDealer source;
 
-        public StatusStartEvent(IStatusEffect effect, IStatusEffectable target) : base(effect, target)
+        public StatusStartEvent(IStatusEffect effect, IDamageDealer source, IStatusEffectable target) : base(effect, target)
         {
+            this.source = source;
         }
     }
 

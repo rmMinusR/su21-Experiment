@@ -37,6 +37,7 @@ public sealed class EventBus
 
     public static T DispatchEvent<T>(T @event) where T : Event
     {
+        @event.OnPreDispatch();
         int processCount = 0;
 
         foreach(KeyValuePair<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> pair in buses)
@@ -57,7 +58,8 @@ public sealed class EventBus
                 }
             }
         }
-        
+
+        @event.OnPostDispatch();
         return @event;
     }
 }
@@ -88,4 +90,7 @@ public abstract class Event
     {
         isCancelled = false;
     }
+
+    public virtual void OnPreDispatch() { }
+    public virtual void OnPostDispatch() { }
 }

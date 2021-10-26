@@ -397,7 +397,8 @@ MonoBehaviour:
   host: {fileID: 8468442695502157647}
   animator: {fileID: 8468442695502157635}
   playerSprite: {fileID: 8468442695901566341}
-  currentFacing: 0
+  flipTarget: {fileID: 8468442695537463970}
+  currentFacing: 1
   _buffer: []
   _currentlyPlaying: {fileID: 0}
   _currentTimeLeft: 0

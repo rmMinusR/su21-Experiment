@@ -11,6 +11,7 @@ public class PlayerAnimationDriver : MonoBehaviour
     [SerializeField] private PlayerHost host;
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer playerSprite;
+    [SerializeField] private Transform flipTarget;
 
     private BaseMovementAction fallbackSource => host.baseMovement;
 
@@ -61,11 +62,12 @@ public class PlayerAnimationDriver : MonoBehaviour
         //Do sprite flipping
         //Tmp is needed to detect changes
         Facing tmpCurFacing = host.facing;
-        if (tmpCurFacing != Facing.Agnostic)
-        {
-            currentFacing = tmpCurFacing;
-            playerSprite.flipX = currentFacing == Facing.Left;
-        }
+        if (tmpCurFacing != Facing.Agnostic) currentFacing = tmpCurFacing;
+
+        Vector3 tmpScale = flipTarget.transform.localScale;
+             if (currentFacing == Facing.Left ) tmpScale.x = -Mathf.Abs(tmpScale.x);
+        else if (currentFacing == Facing.Right) tmpScale.x =  Mathf.Abs(tmpScale.x);
+        flipTarget.transform.localScale = tmpScale;
     }
 
     [Header("Animation status")]

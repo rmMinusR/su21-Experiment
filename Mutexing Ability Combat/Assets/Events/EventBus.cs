@@ -42,7 +42,7 @@ public sealed class EventBus
 
         foreach(KeyValuePair<System.Type, SimplePriorityQueue<IEventListener, Events.Priority>> pair in buses)
         {
-            if(pair.Key.IsAssignableFrom(typeof(T)))
+            if(pair.Key.IsAssignableFrom(@event.GetType()))
             {
                 foreach (IEventListener i in pair.Value)
                 {

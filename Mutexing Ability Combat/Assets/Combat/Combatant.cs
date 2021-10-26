@@ -86,8 +86,17 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     private void HandleEvent(Events.StatusStartEvent sstart)
     {
-        if(!statusEffects.Contains(sstart.effect) && !statusEffects.Any(x => x.GetType() == sstart.effect.GetType()))
+        if(!statusEffects.Contains(sstart.effect))
         {
+            //Remove old status, if it exists
+            List<IStatusEffect> toRemove = statusEffects.Where(x => x.GetType() == sstart.effect.GetType()).ToList();
+            foreach (IStatusEffect x in toRemove)
+            {
+                statusEffects.Remove(x);
+                x.OnStop();
+            }
+
+            //Add new status
             sstart.effect.OnStart(this, sstart.source);
             statusEffects.Add(sstart.effect);
         }

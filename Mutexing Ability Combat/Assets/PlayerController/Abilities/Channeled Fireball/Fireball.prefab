@@ -139,6 +139,6 @@ MonoBehaviour:
   curLifetime: 0
   maxLifetime: 5
   explosionRadius: 2
-  burnDamagePerTick: 2
-  burnTicksPerSecond: 2
-  burnSeconds: 5
+  burnDamagePerTick: 1
+  burnTicksPerSecond: 5
+  burnSeconds: 4

@@ -1,23 +1,54 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class DashAbility : IAbility, IMovementProvider
+public sealed class DashAbility : ICastableAbility, IMovementProvider
 {
+    private InputAction controlActivate;
+    private void Awake()
+    {
+        controlActivate = host.controlsMap.FindAction("Dash");
+        Debug.Assert(controlActivate != null);
+    }
+
     protected override void DoEventRegistration() { }
+    public override void OnRecieveEvent(Event e) { }
 
-    public Vector2 DoMovement(Vector2 currentVelocity, InputParam input)
+    public override bool ShouldStart() => controlActivate.ReadAsButton() && nextTimeCastable < host.time.stable && !host.moving.IsClaimed;
+
+    [SerializeField] [Min(0)] private float dashSpeedBase = 1;
+    [SerializeField] private AnimationCurve dashSpeedCurve = AnimationCurve.Constant(0, 1, 1);
+    [SerializeField] [Min(0)] private float dashDuration = 1;
+    [SerializeField] [Min(0)] private float dashLerpAccel = 0.95f;
+
+    [Space]
+    [SerializeField] [Min(0)] private float cooldown = 1;
+
+    [Header("State data")]
+    [SerializeField] private float nextTimeCastable; //Cooldowns
+    [SerializeField] private float castStartTime;
+    private float castProgress => Mathf.Clamp01( (host.time.stable - castStartTime) / dashDuration );
+    [SerializeField] private OwnedMutex<IMovementProvider> ownedMutexMove;
+
+    public override void DoStartCast()
     {
-        throw new System.NotImplementedException();
+        castStartTime = host.time.stable;
+
+        ownedMutexMove = host.moving.Claim(this);
+
+        host.ui.SetCurrentAbility(null, "Dashing", dashDuration);
     }
 
-    public override void OnRecieveEvent(Event e)
+    public Vector2 DoMovement(Vector2 velocity, InputParam input) => Vector2.Lerp(input.global * dashSpeedBase * dashSpeedCurve.Evaluate(castProgress), velocity, Mathf.Pow(1-dashLerpAccel, host.time.delta));
+
+    public override bool ShouldEnd() => host.time.stable > dashDuration + castStartTime;
+
+    public override void DoEndCast()
     {
-        throw new System.NotImplementedException();
+        ownedMutexMove.Release();
+
+        EventBus.Dispatch(new Events.AbilityEndEvent(this, Events.AbilityEndEvent.Reason.CastTimeEnded, true)); //TODO fix
+        nextTimeCastable = host.time.stable + cooldown;
     }
 
-    public override void WriteAnimations(PlayerAnimationDriver anim)
-    {
-        throw new System.NotImplementedException();
-    }
+    public override void WriteAnimations(PlayerAnimationDriver anim) { }
 }

@@ -139,6 +139,7 @@ MonoBehaviour:
   curLifetime: 0
   maxLifetime: 5
   explosionRadius: 2
+  spawnOnImpact: {fileID: 8792888054122131344, guid: 4994596779445b245bd8c6c459fa578c, type: 3}
   burnDamagePerTick: 1
   burnTicksPerSecond: 5
   burnSeconds: 4

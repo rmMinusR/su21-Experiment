@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider2D))]
 public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDealer, IStatusEffectable
 {
     #region Health system
@@ -11,9 +12,11 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     [SerializeField] [InspectorReadOnly(editing = InspectorReadOnlyAttribute.Mode.ReadOnly, playing = InspectorReadOnlyAttribute.Mode.ReadWrite)] protected float health;
     [SerializeField] protected float maxHealth;
 
-    private void Awake()
+    protected virtual void Awake()
     {
         health = maxHealth;
+
+        foreach (PlayerHost i in FindObjectsOfType<PlayerHost>()) if (i != this) Physics2D.IgnoreCollision(this.GetComponent<Collider2D>(), i.GetComponent<Collider2D>());
     }
 
     public float GetHealth() => health;
@@ -22,7 +25,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     public abstract bool ShowHealthUI();
 
-    private void HandleEvent(Events.DamageEvent damage)
+    protected virtual void HandleEvent(Events.DamageEvent damage)
     {
         if(damage.target == this)
         {
@@ -31,7 +34,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
         }
     }
 
-    private void HandleEvent(Events.HealEvent heal)
+    protected virtual void HandleEvent(Events.HealEvent heal)
     {
         if (heal.target == this)
         {
@@ -39,11 +42,11 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
         }
     }
 
-    private void HandleEvent(Events.DeathEvent death)
+    protected virtual void HandleEvent(Events.DeathEvent death)
     {
         if(death.target == this)
         {
-            Destroy(gameObject);
+            Destroy(gameObject); //TODO replace with actual death anim, ragdoll, etc
         }
     }
 

@@ -72,8 +72,8 @@ public sealed class PlayerHost : MonoBehaviour, IDamageDealer
 
     public Transform spellcastOrigin;
 
-    public readonly Mutex<IAbility> casting = new Mutex<IAbility>();
-    public readonly Mutex<IMovementProvider> moving  = new Mutex<IMovementProvider>();
+    [SerializeReference] public readonly Mutex<IAbility> casting = new Mutex<IAbility>();
+    [SerializeReference] public readonly Mutex<IMovementProvider> moving  = new Mutex<IMovementProvider>();
     
     #region Ground/ceiling checking
 

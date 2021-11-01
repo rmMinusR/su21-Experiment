@@ -187,7 +187,7 @@ public sealed class Mutex<T> where T : class
 [Serializable]
 public sealed class OwnedMutex<T> where T : class
 {
-    [SerializeField] [HideInInspector] private Mutex<T> mutex;
+    [SerializeField] [HideInInspector] private Mutex<T> mutex; //FIXME switch to SerializeReference
     [SerializeField] private T _owner;
     public T Owner => _owner;
     public bool IsValid => mutex != null;

@@ -15,12 +15,20 @@ public sealed class ChanneledFireballProjectile : IProjectile, IDamagingEffect
     [SerializeField] [Min(0)] private float explosionRadius;
     private void Explode()
     {
+        if(spawnOnImpact != null)
+        {
+            GameObject impactEffect = Instantiate(spawnOnImpact, transform.position, transform.rotation);
+            impactEffect.transform.localScale = transform.localScale;
+        }
+
         foreach(IDamageable target in FindObjectsOfType<Component>().Select(t => t as IDamageable).Where(t => t != null))
         {
             GameObject targetGameObject = ((Component)target).gameObject;
             if (Vector2.Distance(targetGameObject.transform.position, transform.position) < explosionRadius) Affect(target);
         }
     }
+
+    [SerializeField] private GameObject spawnOnImpact;
 
     [Header("Burn DoT")]
     [SerializeField] [Min(0)] float burnDamagePerTick;

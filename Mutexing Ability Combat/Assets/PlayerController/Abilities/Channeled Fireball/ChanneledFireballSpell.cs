@@ -98,6 +98,7 @@ public class ChanneledFireballSpell : ICastableAbility, IMovementProvider
         IProjectile fireball = Instantiate(fireballPrefab, host.spellcastOrigin.transform.position, Quaternion.identity).GetComponent<IProjectile>();
         fireball.facing = host.anim.currentFacing;
         fireball.chargeRatio = castProgress;
+        fireball.source = host;
     }
 
     public override void WriteAnimations(PlayerAnimationDriver anim)

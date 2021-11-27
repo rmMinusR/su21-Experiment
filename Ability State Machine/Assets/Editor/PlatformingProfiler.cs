@@ -322,46 +322,6 @@ public sealed class PlatformingProfiler : EditorWindow
         
     }
 
-    private List<SimulatedPathFrame> BinarySearchForAncestor(PlayerHost.Context context, List<SimulatedPathFrame> frames, int pivot, Vector2 targetPos)
-    {
-        List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame>();
-        //Binary search until we've found the specific frames
-        int lowerBound = 0;
-        int upperBound = frames.Count-1;
-        int iterationCounter = 0;
-        do
-        {
-            iterationCounter++;
-
-            //Reset for next run through
-            backtrackedPath.Clear();
-            backtrackedPath.Add(frames[pivot]);
-
-            //Run simulation forward to check if our prediction is valid
-            SimulateSegmentForward(context, ref backtrackedPath,
-                (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
-                                || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
-                                || (vCur.pos.y < targetPos.y && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
-                (v) => true
-            );
-
-            //FIXME bad practice, find a better comparison
-            Vector2 targetOffset = backtrackedPath[backtrackedPath.Count-1].pos - targetPos;
-            if (targetOffset.x < 0) lowerBound = pivot; //delta-X is negative, we undershot
-            else                    upperBound = pivot; //delta-X is positive, we overshot
-
-            if(showDebugData) Debug.Log(iterationCounter+": range "+lowerBound+" to "+upperBound+" = "+frames[lowerBound].pos+" to "+frames[upperBound].pos+" // status = "+targetOffset.x);
-
-            //If we're continuing, update pivot (rounds down)
-            if (upperBound - lowerBound > 1) pivot = (lowerBound+upperBound) / 2;
-
-        } while (upperBound-lowerBound > 1); //1 frame accuracy
-        if(showDebugData) Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
-
-        backtrackedPath.TrimExcess();
-        return backtrackedPath;
-    }
-
     private NTree<List<SimulatedPathFrame>> SimulateTreeForward(HashSet<Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame>> frontier, PlayerHost.Context context)
     {
         CastFunc playerCast = GetCastFunc(character.gameObject);
@@ -424,8 +384,8 @@ public sealed class PlatformingProfiler : EditorWindow
                         }
                     }
 
-                    List<SimulatedPathFrame> backtrackedPath = BinarySearchForAncestor(context, parent.data, pivot, expectedLandingPosition);
-                        
+                    List<SimulatedPathFrame> backtrackedPath = BinarySearchForAncestor(context, parent.data, ref pivot, expectedLandingPosition);
+                    
                     //TODO repeat with parent's parent if pivot=0
                         
                     //Merge head into parent
@@ -443,6 +403,46 @@ public sealed class PlatformingProfiler : EditorWindow
         return pathsTree;
     }
 
+    private List<SimulatedPathFrame> BinarySearchForAncestor(PlayerHost.Context context, List<SimulatedPathFrame> frames, ref int pivot, Vector2 targetPos)
+    {
+        List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame>();
+        //Binary search until we've found the specific frames
+        int lowerBound = 0;
+        int upperBound = frames.Count-1;
+        int iterationCounter = 0;
+        do
+        {
+            iterationCounter++;
+
+            //Reset for next run through
+            backtrackedPath.Clear();
+            backtrackedPath.Add(frames[pivot]);
+
+            //Run simulation forward to check if our prediction is valid
+            SimulateSegmentForward(context, ref backtrackedPath,
+                (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
+                                || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
+                                || (vCur.pos.y < targetPos.y && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
+                (v) => true
+            );
+
+            //FIXME bad practice, find a better comparison
+            Vector2 targetOffset = backtrackedPath[backtrackedPath.Count-1].pos - targetPos;
+            if (targetOffset.x < 0) lowerBound = pivot; //delta-X is negative, we undershot
+            else                    upperBound = pivot; //delta-X is positive, we overshot
+
+            if(showDebugData) Debug.Log(iterationCounter+": range "+lowerBound+" to "+upperBound+" = "+frames[lowerBound].pos+" to "+frames[upperBound].pos+" // status = "+targetOffset.x);
+
+            //If we're continuing, update pivot (rounds down)
+            if (upperBound - lowerBound > 1) pivot = (lowerBound+upperBound) / 2;
+
+        } while (upperBound-lowerBound > 1); //1 frame accuracy
+        if(showDebugData) Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
+
+        backtrackedPath.TrimExcess();
+        return backtrackedPath;
+    }
+
     private void SimulateSegmentForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop, Func<SimulatedPathFrame, bool> extraJumpConditions)
     {
         SimulatedPathFrame data = path[path.Count-1];
@@ -454,9 +454,13 @@ public sealed class PlatformingProfiler : EditorWindow
         
         do
         {
+            //Run ledge detection
+            RaycastHit2D ledgeDet0, ledgeDet1;
+            data.ledge = DetectLedge(context, data, colliderSize, out ledgeDet0, out ledgeDet1);
+
             //Setup input
             context.input.local = context.input.global = SimulateAxisInput(data.pos);
-            context.input.jump = SimulateJumpInput(context, data, colliderSize) || extraJumpConditions(data);
+            context.input.jump = SimulateJumpInput(context, data, ledgeDet0, ledgeDet1) || extraJumpConditions(data);
 
             //Tick time and simulate integration
             data.time = context.time.active = context.time.stable += context.time.delta;
@@ -494,20 +498,23 @@ public sealed class PlatformingProfiler : EditorWindow
 
         context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
     }
-
-    private bool SimulateJumpInput(PlayerHost.Context context, SimulatedPathFrame data, Vector2 colliderSize)
+    
+    private SimulatedPathFrame.LedgeType DetectLedge(PlayerHost.Context context, SimulatedPathFrame data, Vector2 colliderSize, out RaycastHit2D ledgeDet0, out RaycastHit2D ledgeDet1)
     {
         Vector2 posPlusVel = data.pos + data.vel * context.time.delta; //Next frame
-        RaycastHit2D ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
+        ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
         float here = ledgeDet0.collider != null ? ledgeDet0.distance : float.MaxValue;
-        RaycastHit2D ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
+        ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
         float there = ledgeDet1.collider != null ? ledgeDet1.distance : float.MaxValue;
         
         //Run ledge detection
         float dy = here - there; //Inverted because these are technically distance down, not distance up
-        if(Mathf.Abs(dy) > ledgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Rising : SimulatedPathFrame.LedgeType.Falling;
-        else data.ledge = SimulatedPathFrame.LedgeType.None;
+        if(Mathf.Abs(dy) > ledgeThreshold) return (dy>0) ? SimulatedPathFrame.LedgeType.Rising : SimulatedPathFrame.LedgeType.Falling;
+        else return SimulatedPathFrame.LedgeType.None;
+    }
 
+    private bool SimulateJumpInput(PlayerHost.Context context, SimulatedPathFrame data, RaycastHit2D ledgeDet0, RaycastHit2D ledgeDet1)
+    {
         //Jump-if-ledge
         if(jumpIfLedge && data.ledge != SimulatedPathFrame.LedgeType.None) return true;
 

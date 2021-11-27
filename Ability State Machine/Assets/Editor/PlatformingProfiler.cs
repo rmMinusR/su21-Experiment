@@ -401,34 +401,35 @@ public sealed class PlatformingProfiler : EditorWindow
             if(showDebugData) Debug.Log("Finished simulating in "+(microseconds/1000.0f)+"ms");
 
             //Render all
-            pathsTree.Traverse(path =>
-            {
-                //Render basic path
-                Handles.color = Color.green;
-                Handles.DrawAAPolyLine(3, path.data.ConvertAll(x => (Vector3)x.pos).ToArray());
-
-                //Render time labels
-                for (float i = 0; i < path.data.Count; i += timeLabelResolution / timeResolution) Handles.Label(path.data[(int)i].pos, path.data[(int)i].time.ToString("n2") + "s");
-
-                //Render head to show forking
-                if (showDebugData)
-                {
-                    Handles.color = Color.yellow;
-                    Handles.DrawWireCube(path.data[0].pos, Vector3.one * 0.05f);
-                }
-
-                //Render ledge debug data
-                if (showDebugData) foreach (SimulatedPathFrame ledge in path.data.Where(x => x.ledge != SimulatedPathFrame.LedgeType.None))
-                {
-                    if(ledge.ledge == SimulatedPathFrame.LedgeType.Rising ) Handles.color = Color.cyan;
-                    if(ledge.ledge == SimulatedPathFrame.LedgeType.Falling) Handles.color = Color.red;
-                    Handles.DrawWireCube(ledge.pos, Vector3.one * 0.15f);
-                }
-            });
+            pathsTree.Traverse(segmentNode => RenderPathSegment(segmentNode.data));
             if(showDebugData) Debug.Log("========");
-
-            CastFunc cast = GetCastFunc(character.gameObject);
         }
+    }
+
+    private void RenderPathSegment(List<SimulatedPathFrame> segment)
+    {
+        //Render basic path
+        Handles.color = Color.green;
+        Handles.DrawAAPolyLine(3, segment.ConvertAll(x => (Vector3)x.pos).ToArray());
+
+        //Render time labels
+        for (float i = 0; i < segment.Count; i += timeLabelResolution / timeResolution) Handles.Label(segment[(int)i].pos, segment[(int)i].time.ToString("n2") + "s");
+
+        //Render head to show forking
+        if (showDebugData)
+        {
+            Handles.color = Color.yellow;
+            Handles.DrawWireCube(segment[0].pos, Vector3.one * 0.05f);
+        }
+
+        //Render ledge debug data
+        if (showDebugData) foreach (SimulatedPathFrame ledge in segment.Where(x => x.ledge != SimulatedPathFrame.LedgeType.None))
+        {
+            if(ledge.ledge == SimulatedPathFrame.LedgeType.Rising ) Handles.color = Color.cyan;
+            if(ledge.ledge == SimulatedPathFrame.LedgeType.Falling) Handles.color = Color.red;
+            Handles.DrawWireCube(ledge.pos, Vector3.one * 0.15f);
+        }
+        
     }
 
     private void SimulateForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop, Func<SimulatedPathFrame, bool> extraJumpConditions)
@@ -442,49 +443,15 @@ public sealed class PlatformingProfiler : EditorWindow
         
         do
         {
-            //Calculate input
-            Vector2 dp = endPosition - data.pos;
-            context.input.local = context.input.global = inputTargettingMode switch
-            {
-                InputTargettingMode.Direct   => dp.normalized,
-                InputTargettingMode.EightWay => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold), (float)FacingExt.Detect(dp.y, snapInputThreshold)),
-                InputTargettingMode.OnlyX    => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold),                                                 0),
-                InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
-                _ => throw new System.NotImplementedException(),
-            };
+            //Setup input
+            context.input.local = context.input.global = SimulateAxisInput(data.pos);
+            context.input.jump = SimulateJumpInput(context, data, colliderSize) || extraJumpConditions(data);
 
-            //Decide whether to jump
-            {
-                Vector2 posPlusVel = data.pos + data.vel * context.time.delta; //Next frame
-                RaycastHit2D ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
-                float here = ledgeDet0.collider != null ? ledgeDet0.distance : float.MaxValue;
-                RaycastHit2D ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
-                float there = ledgeDet1.collider != null ? ledgeDet1.distance : float.MaxValue;
-                
-                context.input.jump = false;
-
-                //Run ledge detection
-                float dy = here - there; //Inverted because these are technically distance down, not distance up
-                if(Mathf.Abs(dy) > ledgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Rising : SimulatedPathFrame.LedgeType.Falling;
-                else data.ledge = SimulatedPathFrame.LedgeType.None;
-
-                //Jump-if-ledge
-                context.input.jump |= jumpIfLedge && data.ledge != SimulatedPathFrame.LedgeType.None;
-
-                //Run steep slope detection
-                if (jumpIfTooSteep && ledgeDet1.collider != null //Do we have a slope that can even be counted?
-                    && Mathf.Sign(ledgeDet1.normal.x) != Mathf.Sign(data.vel.x) //Are we moving against the slope?
-                    && Mathf.Abs(Vector2.Angle(-ledgeDet1.normal, Physics2D.gravity)) > context.owner.maxGroundAngle //Compare angles
-                ) context.input.jump = true;
-
-                context.input.jump |= extraJumpConditions(data);
-            }
-
-            //Tick time and calculate velocity
+            //Tick time and simulate integration
             data.time = context.time.active = context.time.stable += context.time.delta;
             data.vel = character.DoPhysicsUpdate(data.vel, ref context, IAction.ExecMode.SimulatePath);
 
-            //Check to see if we would hit anything while moving
+            //Simulate collision response
             float timeThisFrame = timeResolution;
             for(int i = 0; i < nMicroframes && timeThisFrame > timeResolution*0.02f; ++i)
             {
@@ -511,9 +478,50 @@ public sealed class PlatformingProfiler : EditorWindow
             //Mark frame
             path.Add(data);
         }
-        //Until we run out of simulation time, or we're told to stop
+        //Run until we run out of simulation time, or we're told to stop
         while (data.time < maxSimulationTime && !shouldStop(path[path.Count - 2], path[path.Count - 1]));
 
         context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
     }
+
+    private bool SimulateJumpInput(PlayerHost.Context context, SimulatedPathFrame data, Vector2 colliderSize)
+    {
+        Vector2 posPlusVel = data.pos + data.vel * context.time.delta; //Next frame
+        RaycastHit2D ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we're standing right now
+        float here = ledgeDet0.collider != null ? ledgeDet0.distance : float.MaxValue;
+        RaycastHit2D ledgeDet1 = Physics2D.Raycast(posPlusVel, Physics2D.gravity.normalized, jumpLedgeProbing+colliderSize.y); //Where we'll be standing once update is done
+        float there = ledgeDet1.collider != null ? ledgeDet1.distance : float.MaxValue;
+        
+        //Run ledge detection
+        float dy = here - there; //Inverted because these are technically distance down, not distance up
+        if(Mathf.Abs(dy) > ledgeThreshold) data.ledge = (dy>0) ? SimulatedPathFrame.LedgeType.Rising : SimulatedPathFrame.LedgeType.Falling;
+        else data.ledge = SimulatedPathFrame.LedgeType.None;
+
+        //Jump-if-ledge
+        if(jumpIfLedge && data.ledge != SimulatedPathFrame.LedgeType.None) return true;
+
+        //Run steep slope detection
+        if (jumpIfTooSteep && ledgeDet1.collider != null //Do we have a slope that can even be counted?
+            && Mathf.Sign(ledgeDet1.normal.x) != Mathf.Sign(data.vel.x) //Are we moving against the slope?
+            && Mathf.Abs(Vector2.Angle(-ledgeDet1.normal, Physics2D.gravity)) > context.owner.maxGroundAngle //Compare angles
+        ) return true;
+
+        //Fallback
+        return false;
+    }
+
+    private Vector2 SimulateAxisInput(Vector2 curPos)
+    {
+        //Calculate input
+        Vector2 dp = endPosition - curPos;
+        return inputTargettingMode switch
+        {
+            InputTargettingMode.Direct   => dp.normalized,
+            InputTargettingMode.EightWay => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold), (float)FacingExt.Detect(dp.y, snapInputThreshold)),
+            InputTargettingMode.OnlyX    => new Vector2((float)FacingExt.Detect(dp.x, snapInputThreshold),                                                 0),
+            InputTargettingMode.OnlyY    => new Vector2(                                                0, (float)FacingExt.Detect(dp.y, snapInputThreshold)),
+            _ => throw new System.NotImplementedException(),
+        };
+    }
+
 }

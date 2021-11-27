@@ -235,7 +235,7 @@ public sealed class PlatformingProfiler : EditorWindow
         if (markRepaint) SceneView.RepaintAll();
     }
 
-    private void OnSceneGUI(SceneView context)
+    private void OnSceneGUI(SceneView sceneView)
     {
         //Draw handles and gizmos
         EditorGUI.BeginChangeCheck();
@@ -266,12 +266,9 @@ public sealed class PlatformingProfiler : EditorWindow
         if (character != null)
         {
             //Setup
-            CastFunc playerCast = GetCastFunc(character.gameObject);
-            PlayerHost.Context c = new PlayerHost.Context(character);
-            c.currentAction = character.GetComponent<BaseMovementAction>();
-            c.time.delta = timeResolution;
-
-            NTree<List<SimulatedPathFrame>> pathsTree = null;
+            PlayerHost.Context context = new PlayerHost.Context(character);
+            context.currentAction = character.GetComponent<BaseMovementAction>();
+            context.time.delta = timeResolution;
 
             //Prep simulation
             HashSet<Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame>> frontier = new HashSet<Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame>>();
@@ -287,114 +284,7 @@ public sealed class PlatformingProfiler : EditorWindow
             System.Diagnostics.Stopwatch simulationTimeTaken = new System.Diagnostics.Stopwatch();
             simulationTimeTaken.Start();
 
-            //Simulate until all paths are resolved, or we found a way to the end
-            bool foundSolution = false;
-            while (frontier.Count > 0 && !foundSolution) {
-                //Pop one element
-                Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame> next = frontier.First();
-                frontier.Remove(next);
-                NTree<List<SimulatedPathFrame>> parent = next.Item1;
-                SimulatedPathFrame start = next.Item2;
-
-                //Safety escape condition: If it ran out of simulation time, skip
-                if(start.time > maxSimulationTime) continue;
-
-                //Ensure Context isn't stale
-                c.time.active = c.time.stable = start.time;
-
-                //Simulate forward
-                List<SimulatedPathFrame> forwardPath = new List<SimulatedPathFrame> { start };
-                SimulateForward(c, ref forwardPath,
-                    (vPrev, vCur) => vPrev.grounded != vCur.grounded //Has ground state changed?
-                                    || (foundSolution |= Mathf.Sign(endPosition.x-vPrev.pos.x) != Mathf.Sign(endPosition.x-vCur.pos.x)), //Have we reached our target?
-                    (v) => false
-                ); //Context won't bleed over, but lastGroundTime won't either. FIXME
-
-                //Add to path tree
-                NTree<List<SimulatedPathFrame>> forwardPathTreeNode = new NTree<List<SimulatedPathFrame>>(forwardPath);
-                if (parent != null) parent.children.AddLast(forwardPathTreeNode);
-                else if(pathsTree == null) pathsTree = forwardPathTreeNode;
-
-                //Push to frontier
-                SimulatedPathFrame stub = forwardPath[forwardPath.Count - 1];
-                frontier.Add(Tuple.Create(forwardPathTreeNode, stub));
-                forwardPath.RemoveAt(forwardPath.Count - 1); //Pop last frame since it will be of different state
-
-                if(showDebugData) Debug.Log(forwardPath[0].pos + " => " + forwardPath[forwardPath.Count - 1].pos);
-
-                if (parent != null)
-                {
-                    //Backtrack and validate for each ledge
-                    foreach(SimulatedPathFrame ledge in forwardPath.Where(x => x.ledge == SimulatedPathFrame.LedgeType.Rising))
-                    {
-                        //Raycast to find where we expect to land
-                        Vector2 expectedLandingPosition = playerCast(ledge.pos, Physics2D.gravity.normalized*jumpLedgeProbing).point;
-                        Vector2 expectedStartingPosition = parent.data[parent.data.Count-1].pos + (expectedLandingPosition - stub.pos);
-                        if(showDebugData) Debug.Log("Ledge at "+expectedLandingPosition);
-                        int pivot = 0;
-                        //Start with pivot as closest point to our predicted start point
-                        {
-                            float closestApproach = float.MaxValue;
-                            for(int i = 0; i < parent.data.Count; ++i) {
-                                float dist = Vector2.Distance(parent.data[i].pos, expectedStartingPosition);
-                                if (dist < closestApproach)
-                                {
-                                    closestApproach = dist;
-                                    pivot = i;
-                                }
-                            }
-                        }
-
-                        List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame>();
-                        //Binary search until we've found the specific frames
-                        {
-                            int bsMin = 0;
-                            int bsMax = parent.data.Count-1;
-                            int iterationCounter = 0;
-                            do
-                            {
-                                iterationCounter++;
-
-                                //Reset for next run through
-                                backtrackedPath.Clear();
-                                backtrackedPath.Add(parent.data[pivot]);
-
-                                //Run simulation forward to check if our prediction is valid
-                                SimulateForward(c, ref backtrackedPath,
-                                    (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
-                                                  || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
-                                                  || (vCur.pos.y < stub.pos.y && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
-                                    (v) => true
-                                );
-
-                                Vector2 status = backtrackedPath[backtrackedPath.Count-1].pos - expectedLandingPosition;
-                                if(showDebugData) Debug.Log(iterationCounter+": range "+bsMin+" to "+bsMax+" = "+parent.data[bsMin].pos+" to "+parent.data[bsMax].pos+" // status = "+status.x);
-
-                                //FIXME bad practice, find a better comparison
-                                if (status.x < 0) bsMin = pivot; //delta-X is negative, we undershot
-                                else              bsMax = pivot; //delta-X is positive, we overshot
-
-                                //If we're continuing, reset pivot (rounds down)
-                                if (bsMax - bsMin > 1) pivot = (bsMin+bsMax) / 2;
-
-                            } while (bsMax-bsMin > 1); //1 frame accuracy
-                            if(showDebugData) Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
-                        }
-                        backtrackedPath.TrimExcess();
-
-                        //TODO repeat with parent's parent if pivot=0
-                        
-                        //Merge head into parent
-                        //Split(parent, pivot); //FIXME breaks everything by allowing empty list
-                        parent.children.AddLast(new NTree<List<SimulatedPathFrame>>(backtrackedPath)); //Parent is now the first part of forwardPath's parent
-
-                        //TODO merge tail/prune
-                    }
-
-                }
-
-                //TODO path merging/pruning here as well?
-            }
+            NTree<List<SimulatedPathFrame>> pathsTree = SimulateTreeForward(frontier, context);
 
             simulationTimeTaken.Stop();
             long microseconds = simulationTimeTaken.ElapsedTicks / (System.Diagnostics.Stopwatch.Frequency / (1000L*1000L));
@@ -432,7 +322,128 @@ public sealed class PlatformingProfiler : EditorWindow
         
     }
 
-    private void SimulateForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop, Func<SimulatedPathFrame, bool> extraJumpConditions)
+    private List<SimulatedPathFrame> BinarySearchForAncestor(PlayerHost.Context context, List<SimulatedPathFrame> frames, int pivot, Vector2 targetPos)
+    {
+        List<SimulatedPathFrame> backtrackedPath = new List<SimulatedPathFrame>();
+        //Binary search until we've found the specific frames
+        int lowerBound = 0;
+        int upperBound = frames.Count-1;
+        int iterationCounter = 0;
+        do
+        {
+            iterationCounter++;
+
+            //Reset for next run through
+            backtrackedPath.Clear();
+            backtrackedPath.Add(frames[pivot]);
+
+            //Run simulation forward to check if our prediction is valid
+            SimulateSegmentForward(context, ref backtrackedPath,
+                (vPrev, vCur) => (vCur.grounded && !vPrev.grounded) //Did we just hit ground?
+                                || (vCur.time-backtrackedPath[0].time) > maxBranchTime //Did we hit the simulation threshold?
+                                || (vCur.pos.y < targetPos.y && Vector2.Dot(Physics2D.gravity, vCur.vel) > 0), //Are we moving away from our target location? (Only after we've started falling again)
+                (v) => true
+            );
+
+            //FIXME bad practice, find a better comparison
+            Vector2 targetOffset = backtrackedPath[backtrackedPath.Count-1].pos - targetPos;
+            if (targetOffset.x < 0) lowerBound = pivot; //delta-X is negative, we undershot
+            else                    upperBound = pivot; //delta-X is positive, we overshot
+
+            if(showDebugData) Debug.Log(iterationCounter+": range "+lowerBound+" to "+upperBound+" = "+frames[lowerBound].pos+" to "+frames[upperBound].pos+" // status = "+targetOffset.x);
+
+            //If we're continuing, update pivot (rounds down)
+            if (upperBound - lowerBound > 1) pivot = (lowerBound+upperBound) / 2;
+
+        } while (upperBound-lowerBound > 1); //1 frame accuracy
+        if(showDebugData) Debug.Log("Found pivot="+pivot+" after "+iterationCounter+" iterations");
+
+        backtrackedPath.TrimExcess();
+        return backtrackedPath;
+    }
+
+    private NTree<List<SimulatedPathFrame>> SimulateTreeForward(HashSet<Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame>> frontier, PlayerHost.Context context)
+    {
+        CastFunc playerCast = GetCastFunc(character.gameObject);
+        NTree<List<SimulatedPathFrame>> pathsTree = null;
+
+        //Simulate until all paths are resolved, or we found a way to the end
+        bool foundSolution = false;
+        while (frontier.Count > 0 && !foundSolution) {
+            //Pop one element
+            Tuple<NTree<List<SimulatedPathFrame>>, SimulatedPathFrame> next = frontier.First();
+            frontier.Remove(next);
+            NTree<List<SimulatedPathFrame>> parent = next.Item1;
+            SimulatedPathFrame start = next.Item2;
+
+            //Safety escape condition: If it ran out of simulation time, skip
+            if(start.time > maxSimulationTime) continue;
+
+            //Ensure Context isn't stale
+            context.time.active = context.time.stable = start.time;
+
+            //Simulate forward
+            List<SimulatedPathFrame> forwardPath = new List<SimulatedPathFrame> { start };
+            SimulateSegmentForward(context, ref forwardPath,
+                (vPrev, vCur) => vPrev.grounded != vCur.grounded //Has ground state changed?
+                                || (foundSolution |= Mathf.Sign(endPosition.x-vPrev.pos.x) != Mathf.Sign(endPosition.x-vCur.pos.x)), //Have we reached our target?
+                (v) => false
+            ); //Context won't bleed over, but lastGroundTime won't either. FIXME
+
+            //Add to path tree
+            NTree<List<SimulatedPathFrame>> forwardPathTreeNode = new NTree<List<SimulatedPathFrame>>(forwardPath);
+            if (parent != null) parent.children.AddLast(forwardPathTreeNode);
+            else if(pathsTree == null) pathsTree = forwardPathTreeNode;
+
+            //Push to frontier
+            SimulatedPathFrame stub = forwardPath[forwardPath.Count - 1];
+            frontier.Add(Tuple.Create(forwardPathTreeNode, stub));
+            forwardPath.RemoveAt(forwardPath.Count - 1); //Pop last frame since it will be of different state
+
+            if(showDebugData) Debug.Log(forwardPath[0].pos + " => " + forwardPath[forwardPath.Count - 1].pos);
+
+            if (parent != null)
+            {
+                //Backtrack and validate for each ledge
+                foreach(SimulatedPathFrame ledge in forwardPath.Where(x => x.ledge == SimulatedPathFrame.LedgeType.Rising))
+                {
+                    //Raycast to find where we expect to land
+                    Vector2 expectedLandingPosition = playerCast(ledge.pos, Physics2D.gravity.normalized*jumpLedgeProbing).point;
+                    Vector2 expectedStartingPosition = parent.data[parent.data.Count-1].pos + (expectedLandingPosition - stub.pos);
+                    if(showDebugData) Debug.Log("Ledge at "+expectedLandingPosition);
+
+                    //Start with pivot as closest point to our predicted start point
+                    int pivot = 0;
+                    float closestApproach = float.MaxValue;
+                    for(int i = 0; i < parent.data.Count; ++i) {
+                        float dist = Vector2.Distance(parent.data[i].pos, expectedStartingPosition);
+                        if (dist < closestApproach)
+                        {
+                            closestApproach = dist;
+                            pivot = i;
+                        }
+                    }
+
+                    List<SimulatedPathFrame> backtrackedPath = BinarySearchForAncestor(context, parent.data, pivot, expectedLandingPosition);
+                        
+                    //TODO repeat with parent's parent if pivot=0
+                        
+                    //Merge head into parent
+                    //Split(parent, pivot); //FIXME breaks everything by allowing empty list
+                    parent.children.AddLast(new NTree<List<SimulatedPathFrame>>(backtrackedPath)); //Parent is now the first part of forwardPath's parent
+
+                    //TODO merge tail/prune
+                }
+
+            }
+
+            //TODO path merging/pruning here as well?
+        }
+
+        return pathsTree;
+    }
+
+    private void SimulateSegmentForward(PlayerHost.Context context, ref List<SimulatedPathFrame> path, Func<SimulatedPathFrame, SimulatedPathFrame, bool> shouldStop, Func<SimulatedPathFrame, bool> extraJumpConditions)
     {
         SimulatedPathFrame data = path[path.Count-1];
 

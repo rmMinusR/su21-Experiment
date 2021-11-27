@@ -428,43 +428,6 @@ public sealed class PlatformingProfiler : EditorWindow
             if(showDebugData) Debug.Log("========");
 
             CastFunc cast = GetCastFunc(character.gameObject);
-            
-            /*
-            //TODO reimplement using sophisticated ledge detection
-
-            //Render jump timing labels
-            //TODO move to own method
-            RaycastHit2D? lastFrame = Physics2D.Raycast(paths[0].pos, Physics2D.gravity.normalized, jumpLedgeProbing);
-            for (int i = 1; i < paths.Count; ++i)
-            {
-                if(!paths[i].grounded)// && Vector2.Dot(path[i].vel, Physics2D.gravity) > 0)
-                {
-                    RaycastHit2D thisFrame = cast(paths[i].pos, Physics2D.gravity.normalized*jumpLedgeProbing);
-                    Vector2 hitPoint = paths[i].pos + Physics2D.gravity.normalized*thisFrame.distance;
-
-                    if (lastFrame != null && thisFrame.collider != null //Detect when a collider first enters our raycast
-                    && (lastFrame.Value.collider == null || Mathf.Abs(thisFrame.distance-lastFrame.Value.distance) > jumpLedgeThreshold)) //And when it's counted as a ledge
-                    {
-                        //Calculate time to impact
-                        //Uses Y only but X would prob work too
-                        float s = -thisFrame.distance;
-                        float v = paths[i].vel.y;
-                        float a = Physics2D.gravity.y;
-
-                        //s = ut + 1/2 * at^2
-                        //t = (-u + sqrt(2sa+u^2))/a
-                        float t = -(v + Mathf.Sqrt(2*s*a+v*v))/a;
-
-                        Handles.color = Color.cyan;
-                        Handles.DrawDottedLine(paths[i].pos, hitPoint, 2);
-                        Handles.DrawDottedLine(hitPoint, thisFrame.point, 2);
-                        Handles.Label(thisFrame.point, t.ToString("n3")+"sec to react\n"+(t/timeResolution).ToString("n0")+" simulation frames");
-                    }
-                    lastFrame = thisFrame;
-                } else lastFrame = null;
-            }
-
-            // */
         }
     }
 

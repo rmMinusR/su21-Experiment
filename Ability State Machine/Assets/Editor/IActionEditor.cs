@@ -44,10 +44,17 @@ public abstract class IActionEditor<TAction> : Editor
         context.time.delta = timestep;
 
         RenderGraph(graphName, context, simulatedInterval, timestep,
-            t => new InputParam {
-                global = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
-                local  = new Vector2((t <= simulatedInterval / 2) ? 1 : 0, 0),
-                jump = false
+            t => {
+                float input;
+                     if(t < simulatedInterval*1/3) input = 1; //Forward
+                else if(t < simulatedInterval*2/3) input = -1; //Backward
+                else                               input = 0; //Stop
+                return new InputParam
+                {
+                    global = new Vector2(input, 0),
+                    local = new Vector2(input, 0),
+                    jump = false
+                };
             },
             () => obj.DoSetup(ref context, null, IAction.ExecMode.SimulateCurves),
             f,

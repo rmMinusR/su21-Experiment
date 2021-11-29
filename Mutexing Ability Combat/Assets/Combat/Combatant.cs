@@ -89,7 +89,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     private void HandleEvent(Events.Combat.StatusStartEvent sstart)
     {
-        if(!statusEffects.Contains(sstart.effect))
+        if((object)sstart.target == this && !statusEffects.Contains(sstart.effect))
         {
             //Remove old status, if it exists
             List<IStatusEffect> toRemove = statusEffects.Where(x => x.GetType() == sstart.effect.GetType()).ToList();
@@ -107,7 +107,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     private void HandleEvent(Events.Combat.StatusStopEvent sstop)
     {
-        if (statusEffects.Contains(sstop.effect))
+        if ((object)sstop.target == this && statusEffects.Contains(sstop.effect))
         {
             statusEffects.Remove(sstop.effect);
             sstop.effect.OnStop();

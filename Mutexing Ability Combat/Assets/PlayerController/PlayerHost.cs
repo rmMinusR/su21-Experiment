@@ -47,8 +47,8 @@ public sealed class PlayerHost : MonoBehaviour, IDamageDealer
     //Ground checking
     [SerializeField] [InspectorReadOnly] private float _lastGroundTime = -1000;
     public float GroundRatio => 1 - Mathf.Clamp01((time.stable - _lastGroundTime) / ghostJumpTime);
-    public bool IsGrounded => time.stable < _lastGroundTime + ghostJumpTime;
-    public bool IsFullyGrounded => time.stable <= ghostJumpTime; //TODO does it need epsilon???
+    public bool IsGrounded => time.stable <= _lastGroundTime + ghostJumpTime;
+    public bool IsFullyGrounded => time.stable <= _lastGroundTime + ghostJumpTime;
     public void MarkUngrounded() => _lastGroundTime = -1000;
     public void MarkGrounded() => _lastGroundTime = time.stable;
 
@@ -84,8 +84,8 @@ public sealed class PlayerHost : MonoBehaviour, IDamageDealer
     [Header("Sloped-surface motion")]
     [SerializeField] [Range(0,1)]      private float _localMotionFalloff = 0.1f; public float localMotionFalloff => _localMotionFalloff;
 
-    private int _tmpNContacts = 0; //Count of VALID entries in @_frameContacts
-    private ContactPoint2D[] _tmpContactStorage = new ContactPoint2D[0]; //Temporary variable, don't use
+    private int _tmpNContacts = 0; //Count of VALID entries in @_tmpContactStorage
+    private ContactPoint2D[] _tmpContactStorage = new ContactPoint2D[0]; //Temporary storage, don't use normally
 
     private void OnCollisionStay2D(Collision2D other)
     {

@@ -307,6 +307,7 @@ MonoBehaviour:
   dashDuration: 0.1
   dashLerpAccel: 0.99
   cooldown: 0.4
+  dashDir: {x: 0, y: 0}
   nextTimeCastable: 0
   castStartTime: 0
   ownedMutexMove: {}
@@ -444,7 +445,7 @@ MonoBehaviour:
   spellcastOrigin: {fileID: 1738393824918981244}
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
-  _localMotionFalloff: 0.1
+  _localMotionFalloff: 0.97
 --- !u!114 &8468442695502157634
 MonoBehaviour:
   m_ObjectHideFlags: 0

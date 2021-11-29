@@ -53,7 +53,7 @@ public sealed class PlayerHost : MonoBehaviour
             this.owner = owner;
             
             _lastGroundTime = -1000;
-            _surfaceUp = Vector2.up;
+            groundNormal = Vector2.up;
             _lastKnownFlattest = null;
 
             input = new InputParam();
@@ -71,10 +71,9 @@ public sealed class PlayerHost : MonoBehaviour
         public void MarkGrounded() => _lastGroundTime = time.stable;
 
         //Surface-local motion
-        [SerializeField] private Vector2 _surfaceUp;
-        public Vector2 surfaceUp { get => _surfaceUp; set => _surfaceUp = value; }
-        public Vector2 surfaceRight => new Vector2(surfaceUp.y, -surfaceUp.x);
-        public Matrix4x4 surfaceToGlobal => new Matrix4x4(surfaceRight, surfaceUp, new Vector4(0, 0, 1, 0), new Vector4(0, 0, 0, 1));
+        public Vector2 groundNormal;
+        public Vector2 groundTangent => new Vector2(groundNormal.y, -groundNormal.x);
+        public Matrix4x4 surfaceToGlobal => new Matrix4x4(groundTangent, groundNormal, new Vector4(0, 0, 1, 0), new Vector4(0, 0, 0, 1));
 
 
         //Live, un-delayed surface motion
@@ -248,8 +247,8 @@ public sealed class PlayerHost : MonoBehaviour
     public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
     {
         //Update local up axis
-        context.surfaceUp = Vector3.Slerp(
-                context.surfaceUp,
+        context.groundNormal = Vector3.Slerp(
+                context.groundNormal,
                 Vector3.Slerp(-Physics2D.gravity, context.lastKnownFlattest?.contact.normal ?? -Physics2D.gravity, context.GroundRatio),
                 1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
             ).normalized;
@@ -257,8 +256,8 @@ public sealed class PlayerHost : MonoBehaviour
         if(mode == IAction.ExecMode.Live)
         {
             //Show debug surface lines
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.surfaceRight, Color.red  , 0.2f);
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.surfaceUp   , Color.green, 0.2f);
+            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundTangent, Color.red  , 0.2f);
+            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundNormal   , Color.green, 0.2f);
         }
 
         //Execute currently-active movement action

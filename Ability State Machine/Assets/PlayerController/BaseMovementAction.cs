@@ -31,10 +31,12 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
     public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode) { }
     public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode) { }
 
-    public void _ApplyGravity(PlayerHost.Context context, ref Vector2 velocity)
+    public void _ApplyGravity(PlayerHost.Context context, ref Vector2 velocity, IAction.ExecMode mode)
     {
-        //Apply gravity
-        velocity += Physics2D.gravity * context.time.delta;
+        //Apply gravity relative to ground, ensuring we don't slide
+        Vector2 groundRelativeGravity = Physics2D.gravity;
+        if(mode != IAction.ExecMode.SimulateCurves) groundRelativeGravity = Vector2Ext.Proj(groundRelativeGravity, context.groundNormal);
+        velocity += groundRelativeGravity * context.time.delta;
     }
 
     public void _ApplyStaticFriction(PlayerHost.Context context, ref Vector2 velocity, float input)
@@ -53,17 +55,17 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
 
     public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
     {
-        _ApplyGravity(context, ref velocity);
+        _ApplyGravity(context, ref velocity, mode);
 
         //Get user input
         //TODO switch to context.input.local?
-        float localInput = Vector2.Dot(context.input.global, context.surfaceRight);
+        float localInput = Vector2.Dot(context.input.global, context.groundTangent);
         if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
-
-        if(mode != IAction.ExecMode.SimulateCurves) velocity += _ApplySurfaceSticking(context);
-
+        
         //Velocity to local space
-        Vector2 localVelocity = (mode==IAction.ExecMode.SimulateCurves) ? velocity : (Vector2)context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity;
+        if (mode == IAction.ExecMode.SimulateCurves) localVelocity = velocity;
+        else localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
         localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
@@ -71,13 +73,14 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         if(mode != IAction.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
 
         //Transform back to global space
-        velocity = (mode<=IAction.ExecMode.LiveDelegated) ? localVelocity : (Vector2)context.surfaceToGlobal.MultiplyVector(localVelocity);
+        if (mode <= IAction.ExecMode.LiveDelegated) velocity = localVelocity;
+        else velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
 
         //Handle jumping, if applicable
         //TODO only on first press
         if(context.IsGrounded && context.input.jump)
         {
-            Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, context.surfaceUp, wallJumpAngle).normalized * jumpForce;
+            Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, context.groundNormal, wallJumpAngle).normalized * jumpForce;
             velocity.y = jv.y;
             velocity.x += jv.x;
             context.MarkUngrounded();
@@ -94,21 +97,6 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         }
 
         return velocity;
-    }
-
-    public Vector2 _ApplySurfaceSticking(PlayerHost.Context context)
-    {
-        if (context.lastKnownFlattest.HasValue)
-        {
-            //If we're on a surface and not trying to jump
-            if (context.IsGrounded && !context.input.jump)
-            {
-                //Slope antislide
-                return - Vector2Ext.Proj(Physics2D.gravity * context.time.delta, context.surfaceRight);
-            }
-        }
-
-        return Vector2.zero;
     }
 
     #region Fake friction on contact

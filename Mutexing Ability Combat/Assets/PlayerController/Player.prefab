@@ -731,7 +731,7 @@ MonoBehaviour:
   abilityNameText: {fileID: 8468442696815415853}
   abilityCastTimeCurrent: 0
   abilityCastTimeMax: 0
-  messagePrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
+  messagePrefab: {fileID: 5793233317901963542, guid: 52d411537b93e084dbaf58fa4d2705df, type: 3}
   messageSource: {fileID: 8468442696815415842}
   messageLife: 2.5
 --- !u!1 &8468442696083603854
@@ -802,8 +802,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 443217093
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 4676f221e42bfb944a62dd2a39b3d550, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

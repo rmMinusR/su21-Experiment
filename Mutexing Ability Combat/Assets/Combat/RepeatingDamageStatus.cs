@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class RepeatingDamageStatus : IStatusEffect, IDamagingEffect
+public class RepeatingDamageStatus : IStatusEffect, ICombatEffect
 {
     public float damagePerTick;
     public float ticksPerSecond;
@@ -27,7 +27,7 @@ public class RepeatingDamageStatus : IStatusEffect, IDamagingEffect
         timeToNextTick -= deltaTime;
         if (timeToNextTick <= 0)
         {
-            EventBus.Dispatch(new Events.DamageEvent(source, this, (IDamageable)owner, damagePerTick));
+            EventBus.Dispatch(new Events.Combat.DamageEvent(source, this, (IDamageable)owner, damagePerTick));
             timeToNextTick = 1 / ticksPerSecond;
         }
 

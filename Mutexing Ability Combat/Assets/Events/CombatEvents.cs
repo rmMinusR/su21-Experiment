@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Events
+namespace Events.Combat
 {
     public abstract class CombatEvent : Event
     {
@@ -16,18 +16,20 @@ namespace Events
         }
     }
 
-    public class SpellAffectEvent : CombatEvent, IEventListener
+    public class CombatAffectEvent : CombatEvent, IEventListener
     {
-        public IDamagingEffect spell;
+        public ICombatEffect spell;
         public List<Event> effects;
 
-        public SpellAffectEvent(IDamagingEffect spell, IDamageDealer source, IDamageable target, List<Event> effects) : base(source, target)
+        public CombatAffectEvent(ICombatEffect spell, IDamageDealer source, IDamageable target, List<Event> effects) : base(source, target)
         {
             this.spell = spell;
             this.effects = effects;
         }
 
-        public override void OnPreDispatch() => EventBus.AddListener(this, typeof(SpellAffectEvent), Priority.Final);
+        public override void OnPreDispatch() => EventBus.AddListener(this, typeof(CombatAffectEvent), Priority.Final);
+
+        public override void OnPostDispatch() => EventBus.RemoveListener(this, typeof(CombatAffectEvent));
 
         public void OnRecieveEvent(Event e)
         {
@@ -36,8 +38,6 @@ namespace Events
                 ApplyEffects();
             }
         }
-
-        public override void OnPostDispatch() => EventBus.RemoveListener(this, typeof(SpellAffectEvent));
 
         private void ApplyEffects()
         {
@@ -48,7 +48,7 @@ namespace Events
     public class DamageEvent : CombatEvent
     {
         public readonly float original;
-        public IDamagingEffect effect;
+        public ICombatEffect effect;
 
         private float? __postAmplification;
         public float postAmplification
@@ -64,7 +64,7 @@ namespace Events
             set => __postMitigation = value;
         }
 
-        public DamageEvent(IDamageDealer source, IDamagingEffect effect, IDamageable target, float amount)
+        public DamageEvent(IDamageDealer source, ICombatEffect effect, IDamageable target, float amount)
             : base(source, target)
         {
             this.effect = effect;

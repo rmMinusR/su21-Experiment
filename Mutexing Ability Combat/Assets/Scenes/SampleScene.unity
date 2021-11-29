@@ -1005,9 +1005,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 0
   maxHealth: 250
-  damageNumberPrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
-  damageNumberSource: {fileID: 1061950127}
-  damageNumberLife: 2
 --- !u!1 &1178138496
 GameObject:
   m_ObjectHideFlags: 0
@@ -1285,6 +1282,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7975938015631394253, guid: 5326812955a124646a5e27c1218dff18, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8468442695502157632, guid: 5326812955a124646a5e27c1218dff18, type: 3}
       propertyPath: m_Name
       value: Player
@@ -1347,58 +1348,22 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8468442696105258022}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8848c6bb8627d74ea9ca57a66fe9979, type: 3}
+  m_Script: {fileID: 11500000, guid: f6afe37d2de02b6478e010c3958f5bab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _currentlyCasting: 0
-  dashSpeedBase: 32
-  dashSpeedCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0.9
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.2
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.7
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0.2
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  dashDuration: 0.1
-  dashLerpAccel: 0.99
-  cooldown: 0.4
-  nextTimeCastable: 0
-  castStartTime: 0
-  ownedMutexMove: {}
+--- !u!114 &8468442696105258024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8468442696105258022}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fa2da321ec908948953d5fa64df5e1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _currentlyCasting: 0

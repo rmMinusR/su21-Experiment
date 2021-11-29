@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Hitbox, spell, projectile, attack
 /// </summary>
-public interface IDamagingEffect
+public interface ICombatEffect
 {
     public IDamageDealer GetSource();
     public float GetDamage();
@@ -23,7 +23,7 @@ public interface IDamageable : IEventListener
     public string GetDisplayName();
 }
 
-public abstract class IDamagingSingleEffector : MonoBehaviour, IDamagingEffect
+public abstract class IDamagingSingleEffector : MonoBehaviour, ICombatEffect
 {
     [SerializeField] protected IDamageDealer owner;
     public IDamageDealer GetSource() => owner;
@@ -49,7 +49,7 @@ public abstract class IDamagingSingleEffector : MonoBehaviour, IDamagingEffect
         }
     }
 
-    protected virtual void ApplyEffects(IDamageable target) => EventBus.Dispatch(new Events.DamageEvent(GetSource(), this, target, GetDamage()));
+    protected virtual void ApplyEffects(IDamageable target) => EventBus.Dispatch(new Events.Combat.DamageEvent(GetSource(), this, target, GetDamage()));
 }
 
 /// <summary>
@@ -71,8 +71,8 @@ public interface IStatusEffectable : IEventListener
 
 public static class IStatusEffectableExt
 {
-    public static void ApplyStatus(this IStatusEffectable target, IStatusEffect effect, IDamageDealer source) => EventBus.Dispatch(new Events.StatusStartEvent(effect, source, target));
-    public static void RemoveStatus(this IStatusEffectable target, IStatusEffect effect) => EventBus.Dispatch(new Events.StatusStopEvent(effect, target));
+    public static void ApplyStatus(this IStatusEffectable target, IStatusEffect effect, IDamageDealer source) => EventBus.Dispatch(new Events.Combat.StatusStartEvent(effect, source, target));
+    public static void RemoveStatus(this IStatusEffectable target, IStatusEffect effect) => EventBus.Dispatch(new Events.Combat.StatusStopEvent(effect, target));
 }
 
 [System.Serializable]

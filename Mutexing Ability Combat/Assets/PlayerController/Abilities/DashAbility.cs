@@ -24,6 +24,7 @@ public sealed class DashAbility : ICastableAbility, IMovementProvider
     [SerializeField] [Min(0)] private float cooldown = 1;
 
     [Header("State data")]
+    [SerializeField] private Vector2 dashDir;
     [SerializeField] private float nextTimeCastable; //Cooldowns
     [SerializeField] private float castStartTime;
     private float castProgress => Mathf.Clamp01( (host.time.stable - castStartTime) / dashDuration );
@@ -31,14 +32,23 @@ public sealed class DashAbility : ICastableAbility, IMovementProvider
 
     public override void DoStartCast()
     {
-        castStartTime = host.time.stable;
-
         ownedMutexMove = host.moving.Claim(this);
+
+        castStartTime = host.time.stable;
+        dashDir = Vector2.zero;
 
         host.ui.SetCurrentAbility(null, "Dashing", dashDuration);
     }
 
-    public Vector2 DoMovement(Vector2 velocity, InputParam input) => Vector2.Lerp(input.global * dashSpeedBase * dashSpeedCurve.Evaluate(castProgress), velocity, Mathf.Pow(1-dashLerpAccel, host.time.delta));
+    public Vector2 DoMovement(Vector2 velocity, InputParam input)
+    {
+        dashDir = Vector2.Lerp(dashDir, input.global, Time.fixedDeltaTime);
+        if (Vector2.Dot(velocity, dashDir) < 0) velocity *= 1-Mathf.Pow(1-0.1f, Time.deltaTime);
+
+        velocity = Vector2.Lerp(dashDir.normalized * dashSpeedBase * dashSpeedCurve.Evaluate(castProgress), velocity, Mathf.Pow(1 - dashLerpAccel, host.time.delta));
+        
+        return velocity;
+    }
 
     public override bool ShouldEnd() => host.time.stable > dashDuration + castStartTime;
 

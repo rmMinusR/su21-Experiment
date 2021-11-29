@@ -36,6 +36,7 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         //Apply gravity relative to ground, ensuring we don't slide
         Vector2 groundRelativeGravity = Physics2D.gravity;
         if(mode != IAction.ExecMode.SimulateCurves) groundRelativeGravity = Vector2Ext.Proj(groundRelativeGravity, context.groundNormal);
+        Debug.DrawLine(context.owner.transform.position, context.owner.transform.position + (Vector3)groundRelativeGravity, Color.cyan);
         velocity += groundRelativeGravity * context.time.delta;
     }
 
@@ -58,35 +59,35 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         _ApplyGravity(context, ref velocity, mode);
 
         //Get user input
-        //TODO switch to context.input.local?
-        float localInput = Vector2.Dot(context.input.global, context.groundTangent);
-        if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(localInput, 0.05f);
+        if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(context.input.local.x, 0.05f);
         
+        //*
         //Velocity to local space
         Vector2 localVelocity;
         if (mode == IAction.ExecMode.SimulateCurves) localVelocity = velocity;
         else localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
-        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
+        localVelocity.x = Mathf.Lerp(context.input.local.x, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
 
-        if(mode != IAction.ExecMode.SimulateCurves) _ApplyStaticFriction(context, ref localVelocity, localInput);
+        _ApplyStaticFriction(context, ref localVelocity, context.input.local.x);
 
         //Transform back to global space
         if (mode <= IAction.ExecMode.LiveDelegated) velocity = localVelocity;
         else velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
+        // */
+
+        //Fix collisions being weird
+        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
 
         //Handle jumping, if applicable
-        //TODO only on first press
-        if(context.IsGrounded && context.input.jump)
+        if (context.IsGrounded && context.input.jump)
         {
             Vector2 jv = Vector2.Lerp(-Physics2D.gravity.normalized, context.groundNormal, wallJumpAngle).normalized * jumpForce;
             velocity.y = jv.y;
             velocity.x += jv.x;
             context.MarkUngrounded();
         }
-
-        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
 
         //Write for AnimationDriver
         if (mode == IAction.ExecMode.Live)

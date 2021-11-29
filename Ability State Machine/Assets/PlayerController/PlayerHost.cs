@@ -119,6 +119,9 @@ public sealed class PlayerHost : MonoBehaviour
 
             if (!flattest.HasValue || (ClimbOverride.Process(CanClimb(i), i.contact.collider.gameObject) && i.angle < flattest.Value.angle)) flattest = i;
         }
+
+        //Debug
+        if(flattest.HasValue) Debug.DrawLine(flattest.Value.contact.point, flattest.Value.contact.point + flattest.Value.contact.normal, Color.yellow, 0.2f);
     }
 
     [NonSerialized] private Contact? flattest;
@@ -246,18 +249,18 @@ public sealed class PlayerHost : MonoBehaviour
 
     public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
     {
-        //Update local up axis
+        //Update surface axes
         context.groundNormal = Vector3.Slerp(
                 context.groundNormal,
-                Vector3.Slerp(-Physics2D.gravity, context.lastKnownFlattest?.contact.normal ?? -Physics2D.gravity, context.GroundRatio),
+                (context.lastKnownFlattest.HasValue && context.IsGrounded) ? context.lastKnownFlattest.Value.contact.normal : -Physics2D.gravity.normalized,
                 1 - Mathf.Pow(1 - localMotionFalloff, context.time.delta)
             ).normalized;
 
-        if(mode == IAction.ExecMode.Live)
+        //Show debug surface lines
+        if (mode == IAction.ExecMode.Live)
         {
-            //Show debug surface lines
             Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundTangent, Color.red  , 0.2f);
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundNormal   , Color.green, 0.2f);
+            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundNormal , Color.green, 0.2f);
         }
 
         //Execute currently-active movement action

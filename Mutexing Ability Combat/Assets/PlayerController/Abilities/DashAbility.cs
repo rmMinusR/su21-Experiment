@@ -56,7 +56,7 @@ public sealed class DashAbility : ICastableAbility, IMovementProvider
     {
         ownedMutexMove.Release();
 
-        EventBus.Dispatch(new Events.AbilityEndEvent(this, Events.AbilityEndEvent.Reason.CastTimeEnded, true)); //TODO fix
+        EventBus.Dispatch(new Events.AbilityEndEvent(this, Events.AbilityEndEvent.Reason.CastTimeEnded, true));
         nextTimeCastable = host.time.stable + cooldown;
     }
 

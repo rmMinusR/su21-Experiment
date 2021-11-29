@@ -16,7 +16,7 @@ namespace Events.Combat
         }
     }
 
-    public class CombatAffectEvent : CombatEvent, IEventListener
+    public class CombatAffectEvent : CombatEvent
     {
         public ICombatEffect spell;
         public List<Event> effects;
@@ -27,19 +27,9 @@ namespace Events.Combat
             this.effects = effects;
         }
 
-        public override void OnPreDispatch() => EventBus.AddListener(this, typeof(CombatAffectEvent), Priority.Final);
-
-        public override void OnPostDispatch() => EventBus.RemoveListener(this, typeof(CombatAffectEvent));
-
-        public void OnRecieveEvent(Event e)
-        {
-            if(e == this)
-            {
-                ApplyEffects();
-            }
-        }
-
-        private void ApplyEffects()
+        public override void OnPostDispatch() => ApplyEffects();
+        
+        public void ApplyEffects()
         {
             foreach (Event e in effects) EventBus.Dispatch(e);
         }

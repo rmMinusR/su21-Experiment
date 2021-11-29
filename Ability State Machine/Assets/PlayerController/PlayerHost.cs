@@ -119,9 +119,6 @@ public sealed class PlayerHost : MonoBehaviour
 
             if (!flattest.HasValue || (ClimbOverride.Process(CanClimb(i), i.contact.collider.gameObject) && i.angle < flattest.Value.angle)) flattest = i;
         }
-
-        //Debug
-        if(flattest.HasValue) Debug.DrawLine(flattest.Value.contact.point, flattest.Value.contact.point + flattest.Value.contact.normal, Color.yellow, 0.2f);
     }
 
     [NonSerialized] private Contact? flattest;
@@ -259,8 +256,8 @@ public sealed class PlayerHost : MonoBehaviour
         //Show debug surface lines
         if (mode == IAction.ExecMode.Live)
         {
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundTangent, Color.red  , 0.2f);
-            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundNormal , Color.green, 0.2f);
+            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundTangent, Color.red  );
+            Debug.DrawLine(transform.position, transform.position + (Vector3)context.groundNormal , Color.green);
         }
 
         //Execute currently-active movement action

@@ -31,54 +31,56 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
     public void DoSetup(ref PlayerHost.Context context, IAction prev, IAction.ExecMode mode) { }
     public void DoCleanup(ref PlayerHost.Context context, IAction next, IAction.ExecMode mode) { }
 
-    public void _ApplyGravity(PlayerHost.Context context, ref Vector2 velocity, IAction.ExecMode mode)
+    public Vector2 _CalcEffectiveGravity(PlayerHost.Context context, IAction.ExecMode mode)
     {
-        //Apply gravity relative to ground, ensuring we don't slide
+        //Effective gravity is relative to ground, ensuring we don't slide
         Vector2 groundRelativeGravity = Physics2D.gravity;
         if(mode != IAction.ExecMode.SimulateCurves) groundRelativeGravity = Vector2Ext.Proj(groundRelativeGravity, context.groundNormal);
-        Debug.DrawLine(context.owner.transform.position, context.owner.transform.position + (Vector3)groundRelativeGravity, Color.cyan);
-        velocity += groundRelativeGravity * context.time.delta;
+        return groundRelativeGravity;
     }
 
-    public void _ApplyStaticFriction(PlayerHost.Context context, ref Vector2 velocity, float input)
+    public void _ApplyStaticFriction(PlayerHost.Context context, ref float x, float input)
     {
         //Snappiness thresholding
         if(context.GroundRatio > 0.05f) {
             if(Mathf.Abs(input) > 0.01f) {
                 //Boost
-                if (Mathf.Abs(velocity.x) < _adjustedCutoffSnappiness && Mathf.Sign(velocity.x) == Mathf.Sign(input)) velocity.x = _adjustedCutoffSnappiness * Mathf.Sign(velocity.x);
+                if (Mathf.Abs(x) < _adjustedCutoffSnappiness && Mathf.Sign(x) == Mathf.Sign(input)) x = _adjustedCutoffSnappiness * Mathf.Sign(x);
             } else {
                 //Cutoff
-                if (Mathf.Abs(velocity.x) < _adjustedCutoffSnappiness) velocity.x = 0;
+                if (Mathf.Abs(x) < _adjustedCutoffSnappiness) x = 0;
             }
         }
     }
 
     public Vector2 DoPhysics(ref PlayerHost.Context context, Vector2 velocity, IAction.ExecMode mode)
     {
-        _ApplyGravity(context, ref velocity, mode);
+        //Fix collisions having too much energy
+        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessCollisionEnergyLoss(velocity);
+
+        //Apply gravity
+        Vector2 fGrav = _CalcEffectiveGravity(context, mode);
+        velocity += fGrav * context.time.delta;
+        if (mode == IAction.ExecMode.Live) Debug.DrawLine(transform.position, transform.position + (Vector3)fGrav, Color.yellow);
 
         //Get user input
-        if(mode == IAction.ExecMode.Live) context.facing = FacingExt.Detect(context.input.local.x, 0.05f);
+        context.facing = FacingExt.Detect(context.input.local.x, 0.05f);
         
         //*
         //Velocity to local space
-        Vector2 localVelocity;
-        if (mode == IAction.ExecMode.SimulateCurves) localVelocity = velocity;
-        else localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
+        Vector2 localVelocity = context.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
-        localVelocity.x = Mathf.Lerp(context.input.local.x, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(context.GroundRatio), context.time.delta)) * moveSpeed;
+        Vector2 dv = -localVelocity;
+        localVelocity.x = Mathf.Lerp(context.input.local.x * moveSpeed, localVelocity.x, Mathf.Pow(1 - CurrentControl(context.GroundRatio), context.time.delta));
+        dv += localVelocity;
+        if(mode == IAction.ExecMode.Live) Debug.DrawLine(transform.position, transform.position + context.surfaceToGlobal.MultiplyVector(dv)/context.time.delta, Color.cyan, 0.2f);
 
-        _ApplyStaticFriction(context, ref localVelocity, context.input.local.x);
+        _ApplyStaticFriction(context, ref localVelocity.x, context.input.local.x);
 
         //Transform back to global space
-        if (mode <= IAction.ExecMode.LiveDelegated) velocity = localVelocity;
-        else velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
+        velocity = context.surfaceToGlobal.MultiplyVector(localVelocity);
         // */
-
-        //Fix collisions being weird
-        if (mode <= IAction.ExecMode.LiveDelegated) velocity = _ProcessFakeFriction(velocity);
 
         //Handle jumping, if applicable
         if (context.IsGrounded && context.input.jump)
@@ -100,7 +102,7 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         return velocity;
     }
 
-    #region Fake friction on contact
+    #region Lose energy on contact
 
     private List<Vector2> fakeFrictionTangents = new List<Vector2>();
     private void OnCollisionEnter2D(Collision2D collision)
@@ -110,7 +112,7 @@ public sealed class BaseMovementAction : MonoBehaviour, IAction
         fakeFrictionTangents.Add(tangent);
     }
 
-    private Vector2 _ProcessFakeFriction(Vector2 velocity)
+    private Vector2 _ProcessCollisionEnergyLoss(Vector2 velocity)
     {
         Vector2 @out = velocity;
         foreach (Vector2 v in fakeFrictionTangents) @out = Vector2Ext.Proj(@out, v);

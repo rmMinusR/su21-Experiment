@@ -24,7 +24,7 @@ public sealed class EventBus : MonoBehaviour
 
     #region Listeners
 
-    private Dictionary<System.Type, HashSet<IEventListener>> listeners;
+    private Dictionary<System.Type, HashSet<IEventListener>> listeners = new Dictionary<System.Type, HashSet<IEventListener>>();
 
     public void AddListener(IEventListener listener, System.Type eventType) => listeners.GetOrCreate(eventType).Add(listener);
     public void RemoveListener(IEventListener listener, System.Type eventType) => listeners[eventType].Remove(listener);

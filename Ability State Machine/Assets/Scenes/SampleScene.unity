@@ -804,11 +804,11 @@ MonoBehaviour:
   ui: {fileID: 610204715}
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
-  _localMotionFalloff: 0.1
+  _localMotionFalloff: 0.98
   context:
     owner: {fileID: 0}
     _lastGroundTime: 0
-    _surfaceUp: {x: 0, y: 0}
+    groundNormal: {x: 0, y: 0}
     input:
       global: {x: 0, y: 0}
       local: {x: 0, y: 0}

@@ -25,26 +25,26 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     public abstract bool ShowHealthUI();
 
-    protected virtual void HandleEvent(Events.DamageEvent damage)
+    protected virtual void HandleEvent(Events.Combat.DamageEvent damage)
     {
-        if(damage.target == this)
+        if((object)damage.target == this)
         {
             health -= damage.postMitigation;
-            if (!IsAlive()) EventBus.Dispatch(new Events.DeathEvent(damage.source, damage.target));
+            if (!IsAlive()) EventBus.Dispatch(new Events.Combat.DeathEvent(damage.source, damage.target));
         }
     }
 
-    protected virtual void HandleEvent(Events.HealEvent heal)
+    protected virtual void HandleEvent(Events.Combat.HealEvent heal)
     {
-        if (heal.target == this)
+        if ((object)heal.target == this)
         {
             health += heal.postMitigation;
         }
     }
 
-    protected virtual void HandleEvent(Events.DeathEvent death)
+    protected virtual void HandleEvent(Events.Combat.DeathEvent death)
     {
-        if(death.target == this)
+        if((object)death.target == this)
         {
             Destroy(gameObject); //TODO replace with actual death anim, ragdoll, etc
         }
@@ -54,22 +54,22 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
 
     protected override void DoEventRegistration()
     {
-        EventBus.AddListener(this, typeof(Events.     DamageEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events.       HealEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events.      DeathEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events.StatusStartEvent), Events.Priority.Final);
-        EventBus.AddListener(this, typeof(Events. StatusStopEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.Combat.     DamageEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.Combat.       HealEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.Combat.      DeathEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.Combat.StatusStartEvent), Events.Priority.Final);
+        EventBus.AddListener(this, typeof(Events.Combat. StatusStopEvent), Events.Priority.Final);
     }
 
     public override void OnRecieveEvent(Event @event)
     {
         if (!@event.isCancelled)
         {
-                 if (@event is Events.     DamageEvent dmg   ) HandleEvent(dmg   );
-            else if (@event is Events.       HealEvent heal  ) HandleEvent(heal  );
-            else if (@event is Events.      DeathEvent death ) HandleEvent(death );
-            else if (@event is Events.StatusStartEvent sstart) HandleEvent(sstart);
-            else if (@event is Events. StatusStopEvent sstop ) HandleEvent(sstop );
+                 if (@event is Events.Combat.     DamageEvent dmg   ) HandleEvent(dmg   );
+            else if (@event is Events.Combat.       HealEvent heal  ) HandleEvent(heal  );
+            else if (@event is Events.Combat.      DeathEvent death ) HandleEvent(death );
+            else if (@event is Events.Combat.StatusStartEvent sstart) HandleEvent(sstart);
+            else if (@event is Events.Combat. StatusStopEvent sstop ) HandleEvent(sstop );
         }
     }
 
@@ -87,9 +87,9 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     //FIXME needs custom serialization + editor to handle polymorphism
     [SerializeField] protected List<IStatusEffect> statusEffects = new List<IStatusEffect>();
 
-    private void HandleEvent(Events.StatusStartEvent sstart)
+    private void HandleEvent(Events.Combat.StatusStartEvent sstart)
     {
-        if(!statusEffects.Contains(sstart.effect))
+        if((object)sstart.target == this && !statusEffects.Contains(sstart.effect))
         {
             //Remove old status, if it exists
             List<IStatusEffect> toRemove = statusEffects.Where(x => x.GetType() == sstart.effect.GetType()).ToList();
@@ -105,9 +105,9 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
         }
     }
 
-    private void HandleEvent(Events.StatusStopEvent sstop)
+    private void HandleEvent(Events.Combat.StatusStopEvent sstop)
     {
-        if (statusEffects.Contains(sstop.effect))
+        if ((object)sstop.target == this && statusEffects.Contains(sstop.effect))
         {
             statusEffects.Remove(sstop.effect);
             sstop.effect.OnStop();
@@ -118,7 +118,7 @@ public abstract class Combatant : ScopedEventListener, IDamageable, IDamageDeale
     {
         foreach (IStatusEffect effect in statusEffects)
         {
-            EventBus.Dispatch(new Events.StatusStopEvent(effect, this));
+            EventBus.Dispatch(new Events.Combat.StatusStopEvent(effect, this));
             effect.OnStop();
         }
 

@@ -51,7 +51,8 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         }
     }
 
-    public Vector2 DoMovement(Vector2 velocity, InputParam input)
+    public Vector2 DoMovement(Vector2 velocity, InputParam input) => DoMovement(velocity, input, moveSpeed);
+    public Vector2 DoMovement(Vector2 velocity, InputParam input, float targetMoveSpeed)
     {
         _ApplyGravity(ref velocity);
 
@@ -66,7 +67,7 @@ public sealed class BaseMovementAction : IAbility, IMovementProvider
         Vector2 localVelocity = host.surfaceToGlobal.inverse.MultiplyVector(velocity);
 
         //Edit surface-relative-X velocity
-        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / moveSpeed, Mathf.Pow(1 -  CurrentControl(host.GroundRatio), host.time.delta)) * moveSpeed;
+        localVelocity.x = Mathf.Lerp(localInput, localVelocity.x / targetMoveSpeed, Mathf.Pow(1 -  CurrentControl(host.GroundRatio), host.time.delta)) * targetMoveSpeed;
 
         _ApplyStaticFriction(ref localVelocity, localInput);
 

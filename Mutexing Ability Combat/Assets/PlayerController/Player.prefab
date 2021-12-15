@@ -113,6 +113,7 @@ GameObject:
   - component: {fileID: 8468442695471175290}
   - component: {fileID: 8468442695471175291}
   - component: {fileID: 8468442695471175288}
+  - component: {fileID: 7975938015631394253}
   m_Layer: 0
   m_Name: Abilities
   m_TagString: Untagged
@@ -247,6 +248,69 @@ MonoBehaviour:
   isGood: 0
   exitReason: 0
   fireballPrefab: {fileID: 2791849194506415621, guid: 37d8aa07a807236498e4e806abd81df9, type: 3}
+--- !u!114 &7975938015631394253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8468442695471175294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8848c6bb8627d74ea9ca57a66fe9979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _currentlyCasting: 0
+  dashSpeedBase: 32
+  dashSpeedCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.9
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.2
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.7
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  dashDuration: 0.1
+  dashLerpAccel: 0.99
+  cooldown: 0.4
+  dashDir: {x: 0, y: 0}
+  nextTimeCastable: 0
+  castStartTime: 0
+  ownedMutexMove: {}
 --- !u!1 &8468442695502157632
 GameObject:
   m_ObjectHideFlags: 0
@@ -381,7 +445,7 @@ MonoBehaviour:
   spellcastOrigin: {fileID: 1738393824918981244}
   __maxGroundAngle: 45
   _ghostJumpTime: 0.05
-  _localMotionFalloff: 0.1
+  _localMotionFalloff: 0.97
 --- !u!114 &8468442695502157634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -667,7 +731,7 @@ MonoBehaviour:
   abilityNameText: {fileID: 8468442696815415853}
   abilityCastTimeCurrent: 0
   abilityCastTimeMax: 0
-  messagePrefab: {fileID: 5793233317901963542, guid: a11b3aa6458149541a93cf570b6ca496, type: 3}
+  messagePrefab: {fileID: 5793233317901963542, guid: 52d411537b93e084dbaf58fa4d2705df, type: 3}
   messageSource: {fileID: 8468442696815415842}
   messageLife: 2.5
 --- !u!1 &8468442696083603854
@@ -738,8 +802,8 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: 443217093
+  m_SortingLayer: -1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 4676f221e42bfb944a62dd2a39b3d550, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

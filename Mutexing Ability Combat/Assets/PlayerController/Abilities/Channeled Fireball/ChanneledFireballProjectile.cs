@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public sealed class ChanneledFireballProjectile : IProjectile, IDamagingEffect
+public sealed class ChanneledFireballProjectile : IProjectile, ICombatEffect
 {
     protected override bool ShouldCollide(IDamageable target) => target != source;
 
@@ -39,11 +39,11 @@ public sealed class ChanneledFireballProjectile : IProjectile, IDamagingEffect
         RepeatingDamageStatus dotStatus = new RepeatingDamageStatus(burnDamagePerTick, burnTicksPerSecond, burnSeconds);
 
         List<Event> effects = new List<Event> {
-            new Events.DamageEvent(source, this, target, GetDamage()),
+            new Events.Combat.DamageEvent(source, this, target, GetDamage()),
         };
-        if (target is IStatusEffectable statusEffectable) effects.Add(new Events.StatusStartEvent(dotStatus, source, statusEffectable));
+        if (target is IStatusEffectable statusEffectable) effects.Add(new Events.Combat.StatusStartEvent(dotStatus, source, statusEffectable));
 
-        EventBus.Dispatch(new Events.SpellAffectEvent(this, source, target, effects));
+        EventBus.Dispatch(new Events.Combat.CombatAffectEvent(this, source, target, effects));
     }
 
     public IDamageDealer GetSource() => source;

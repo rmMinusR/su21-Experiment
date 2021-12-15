@@ -3,20 +3,6 @@ using UnityEngine;
 using Priority_Queue;
 using System.Linq;
 
-namespace Events
-{
-    public enum Priority
-    {
-        Highest = 0,
-        High = 1,
-        Normal = 2,
-        Low = 3,
-        Lowest = 4,
-
-        Final = 1000
-    }
-}
-
 public sealed class EventBus : MonoBehaviour
 {
     #region Singleton
@@ -95,23 +81,19 @@ public sealed class EventBus : MonoBehaviour
     #endregion
 }
 
-
-public interface IEventListener
+namespace Events
 {
-    public void OnRecieveEvent(Event e);
+    public enum Priority
+    {
+        Highest = 0,
+        High = 1,
+        Normal = 2,
+        Low = 3,
+        Lowest = 4,
+
+        Final = 1000
+    }
 }
-
-public abstract class ScopedEventListener : MonoBehaviour, IEventListener
-{
-    protected virtual void OnEnable() => DoEventRegistration();
-
-    protected virtual void OnDisable() => EventBus.RemoveListenerFromAll(this);
-
-    protected abstract void DoEventRegistration();
-
-    public abstract void OnRecieveEvent(Event e);
-}
-
 
 public abstract class Event
 {

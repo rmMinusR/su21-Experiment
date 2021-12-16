@@ -86,7 +86,7 @@ namespace Pathfinding
             PlayerHost tmp = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
             if(tmp != character)
             {
-                tmp = character;
+                character = tmp;
                 movement = character.GetComponent<BaseMovementAction>();
             }
 

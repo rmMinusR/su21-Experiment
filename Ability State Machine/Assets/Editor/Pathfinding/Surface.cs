@@ -10,8 +10,9 @@ namespace Pathfinding
     public class Surface
     {
         [SerializeField] private List<Vector2> points; //Basically a polyline
+        public IReadOnlyList<Vector2> GetPoints() => points;
 
-        [SerializeField] private float distBetweenPoints;
+        [SerializeField] private float maxDistBetweenPoints;
 
         public void GetClosestPoint(Vector2 from, out Vector2 closest, out int closestInd)
         {
@@ -35,32 +36,13 @@ namespace Pathfinding
         {
             GetClosestPoint(point, out Vector2 closestPoint, out _);
             Vector2 closestDiff = point-closestPoint;
-            return closestDiff.sqrMagnitude < distBetweenPoints * distBetweenPoints;
+            return closestDiff.sqrMagnitude < maxDistBetweenPoints * maxDistBetweenPoints;
         }
 
-        public bool TryMerge(Vector2 point)
-        {
-            if(points.Contains(point)) throw new InvalidOperationException(); //Refuse to merge something that's already here
-
-            GetClosestPoint(point, out Vector2 closestPoint, out int closestInd);
-            Vector2 closestDiff = point-closestPoint;
-            if (closestDiff.sqrMagnitude > distBetweenPoints * distBetweenPoints) return false; //Too far to merge
-
-            Vector2 before = points[Mathf.Max(closestInd-1, 0             )];
-            Vector2 after  = points[Mathf.Min(closestInd+1, points.Count-1)];
-            Vector2 tangent = after-before;
-
-            bool insertBefore = Vector2.Dot(tangent, closestDiff) < 0;
-            int insertLocation = closestInd + (insertBefore?1:0);
-
-            points.Insert(insertLocation, point);
-            return true;
-        }
-
-        public Surface(Vector2 seedPoint, float epsilon)
+        public Surface(Vector2 seedPoint, float maxDistBetweenPoints)
         {
             points = new List<Vector2> { seedPoint };
-            this.distBetweenPoints = epsilon;
+            this.maxDistBetweenPoints = maxDistBetweenPoints;
         }
 
         public static Surface BuildFromSweep(Vector2 startPoint, float mergeEpsilon, float stepEpsilon, float backpedalEpsilon, float maxSurfaceAngle, Func<GameObject, bool> ignore)
@@ -99,7 +81,7 @@ namespace Pathfinding
             return surf;
         }
 
-        public void DebugDraw()
+        public void DebugDraw(float maxAngle)
         {
             for(int i = 1; i < points.Count; ++i)
             {
@@ -107,7 +89,7 @@ namespace Pathfinding
                 Vector2 diff = a-b;
                 float ang = Vector2.Angle(Vector2.right, diff.x<0 ? -diff : diff);
 
-                Handles.color = Color.HSVToRGB(0.33f-ang/180, 1, 1);
+                Handles.color = Color.HSVToRGB(Mathf.Lerp(0.33f, 0, ang/maxAngle), 1, 1);
                 Handles.DrawAAPolyLine(10.0f, a, b);
             }
         }

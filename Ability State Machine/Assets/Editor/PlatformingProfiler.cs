@@ -464,7 +464,7 @@ public sealed class PlatformingProfiler : EditorWindow
 
             //Tick time and simulate integration
             data.time = context.time.active = context.time.stable += context.time.delta;
-            data.vel = character.DoPhysicsUpdate(data.vel, ref context, IAction.ExecMode.SimulatePath);
+            data.vel = character.DoPhysics(data.vel, ref context, IAction.ExecMode.SimulatePath);
 
             //Simulate collision response
             float timeThisFrame = timeResolution;

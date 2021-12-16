@@ -10,19 +10,8 @@ namespace Pathfinding
     {
         #region Support code
 
-        public enum InputTargettingMode
-        {
-            Direct,
-            EightWay,
-            OnlyX,
-            OnlyY
-        }
-
         [MenuItem("Tools/Platforming Pathfinder")]
-        public static void Open()
-        {
-            EditorWindow.GetWindow(typeof(Pathfinder));
-        }
+        public static void Open() => EditorWindow.GetWindow(typeof(Pathfinder));
 
         private delegate RaycastHit2D CastFunc(Vector2 pos, Vector2 dir);
 
@@ -87,7 +76,7 @@ namespace Pathfinding
 
         #region Simulation settings
 
-        private PlayerHost character = null;
+        public PlayerHost character { get; private set; }
 
         private Vector2 startPosition = Vector2.left;
         private Vector2 endPosition   = Vector2.right;
@@ -116,8 +105,7 @@ namespace Pathfinding
             GUI.enabled = (character != null);
             if (GUILayout.Button("Scan walkable surfaces"))
             {
-                worldRepr = new WorldRepresentation();
-                worldRepr.ScanAll(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
+                worldRepr = new WorldRepresentation(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
                 markRepaint = true;
             }
             GUI.enabled = true;
@@ -158,7 +146,84 @@ namespace Pathfinding
             EditorGUI.EndChangeCheck();
 
 
-            if(worldRepr != null) worldRepr.DebugDraw();
+            if(worldRepr != null) worldRepr.DebugDraw(character != null ? character.maxGroundAngle : 180);
+        }
+
+        
+        public struct Frame
+        {
+            public Vector2 pos;
+            public Vector2 vel;
+            public float time;
+            public bool grounded;
+
+            public enum LedgeType
+            {
+                Falling = -1,
+                None = 0,
+                Rising = 1
+            }
+            public LedgeType ledge;
+
+            public class CompareByTime : IComparer<Frame>
+            {
+                public int Compare(Frame x, Frame y)
+                {
+                    return Comparer<float>.Default.Compare(x.time, y.time);
+                }
+            }
+        }
+
+        public void SimulateFrame(ref PlayerHost.Context context, ref Frame data)
+        {
+            CastFunc cast = GetCastFunc(character.gameObject);
+
+            //Tick time and simulate integration
+            data.time = context.time.active = context.time.stable += context.time.delta;
+            data.vel = character.DoPhysics(data.vel, ref context, IAction.ExecMode.SimulatePath);
+
+            //Simulate collision response
+            RaycastHit2D groundCheck = cast(data.pos + Vector2.up*physicsEpsilon, data.vel*timeResolution);
+            Vector2 groundTangent = new Vector2(groundCheck.normal.y, -groundCheck.normal.x);
+            data.grounded = groundCheck.collider != null;
+
+            //If we hit ground, need to project along it
+            if(data.grounded)
+            {
+                data.pos += groundCheck.fraction * timeResolution * data.vel + groundCheck.normal*physicsEpsilon;
+                data.vel = Vector2Ext.Proj(data.vel, groundTangent);
+                context.MarkGrounded();
+            }
+        }
+
+        public void SimulateSegmentForward(PlayerHost.Context context, ref List<Frame> path, Func<Frame, Frame, bool> shouldStop, Func<Frame, bool> extraJumpConditions)
+        {
+            Frame data = path[path.Count-1];
+
+            CastFunc cast = GetCastFunc(character.gameObject);
+            Vector2 colliderSize = GetColliderSize(character.gameObject);
+
+            context.currentAction.DoSetup(ref context, null, IAction.ExecMode.SimulatePath);
+        
+            do
+            {
+                //Run ledge detection
+                RaycastHit2D ledgeDet0, ledgeDet1;
+                data.ledge = DetectLedge(context, data, colliderSize, out ledgeDet0, out ledgeDet1);
+
+                //Setup input
+                context.input.local = context.input.global = SimulateAxisInput(data.pos);
+                context.input.jump = SimulateJumpInput(context, data, ledgeDet0, ledgeDet1) || extraJumpConditions(data);
+
+                SimulateFrame(ref context, ref data);
+            
+                //Mark frame
+                path.Add(data);
+            }
+            //Run until we run out of simulation time, or we're told to stop
+            while (data.time < maxSimulationTime && !shouldStop(path[path.Count - 2], path[path.Count - 1]));
+
+            context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
         }
     }
 }

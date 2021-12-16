@@ -19,6 +19,13 @@ public static class GeneralExt
     public static double Sq(this double v) => v * v;
 
     public static decimal Sq(this decimal v) => v * v;
+
+    public static void Swap<T>(ref T a, ref T b)
+    {
+        T tmp = a;
+        a = b;
+        b = tmp;
+    }
 }
 
 public static class DataStructExt

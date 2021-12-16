@@ -6,6 +6,13 @@ namespace Pathfinding
     [Serializable]
     public class Connection
     {
+        public struct Node
+        {
+            public Surface surface;
+            public int index;
+            public Vector2 point; //For faster/easier lookup later
+        }
+
         [SerializeReference] public Node from;
         [SerializeReference] public Node to;
 

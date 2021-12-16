@@ -90,7 +90,7 @@ public sealed class PlayerHost : MonoBehaviour
     #region Ground/ceiling checking
 
     [Header("Ground checking")]
-    [SerializeField] [Range(0, 180)]   private float __maxGroundAngle;            public float maxGroundAngle => __maxGroundAngle;
+    [SerializeField] [Range(0, 180)]   private float __maxGroundAngle;           public float maxGroundAngle => __maxGroundAngle;
     [SerializeField] [Min(0.01f)]      private float _ghostJumpTime = 0.05f;     public float ghostJumpTime  => _ghostJumpTime;
 
     [Header("Sloped-surface motion")]
@@ -191,7 +191,7 @@ public sealed class PlayerHost : MonoBehaviour
 
         _UpdateContext();
 
-        _rb.velocity = DoPhysicsUpdate(_rb.velocity, ref context, IAction.ExecMode.Live);
+        _rb.velocity = DoPhysics(_rb.velocity, ref context, IAction.ExecMode.Live);
     }
     
     private void _SearchForActionStateChanges()
@@ -244,7 +244,7 @@ public sealed class PlayerHost : MonoBehaviour
         context.currentAction = activeMovement != null ? activeMovement : baseMovement;
     }
 
-    public Vector2 DoPhysicsUpdate(Vector2 velocity, ref Context context, IAction.ExecMode mode)
+    public Vector2 DoPhysics(Vector2 velocity, ref Context context, IAction.ExecMode mode)
     {
         //Update surface axes
         context.groundNormal = Vector3.Slerp(

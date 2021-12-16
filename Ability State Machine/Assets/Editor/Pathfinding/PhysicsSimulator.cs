@@ -66,7 +66,7 @@ namespace Pathfinding
 
         #region Settings
 
-        public float physicsEpsilon;
+        public float epsilon;
         public float timeResolution;
         public float maxSimulationTime;
         public float ledgeProbeDist;
@@ -76,7 +76,7 @@ namespace Pathfinding
         {
             timeResolution      = 1/EditorGUILayout.Slider("Time resolution (FPS)", Mathf.Clamp(1 / timeResolution, 60, 240), 60, 240);
             maxSimulationTime   =  EditorGUILayout.Slider("Max time"              , maxSimulationTime  , 5, 45);
-            physicsEpsilon      =  EditorGUILayout.Slider("Epsilon"               , physicsEpsilon     , 0.0001f, 0.002f);
+            epsilon      =  EditorGUILayout.Slider("Epsilon"               , epsilon     , 0.0001f, 0.002f);
             ledgeProbeDist      =  EditorGUILayout.Slider("Ledge probe distance"  , ledgeProbeDist     , 5, 50);
             ledgeDeltaThreshold =  EditorGUILayout.Slider("Ledge cutoff threshold", ledgeDeltaThreshold, 1, 10);
         }
@@ -94,14 +94,14 @@ namespace Pathfinding
             data.vel = character.DoPhysics(data.vel, ref context, IAction.ExecMode.SimulatePath);
 
             //Simulate collision response
-            RaycastHit2D groundCheck = cast(data.pos + Vector2.up*physicsEpsilon, data.vel*timeResolution);
+            RaycastHit2D groundCheck = cast(data.pos + Vector2.up*epsilon, data.vel*timeResolution);
             Vector2 groundTangent = new Vector2(groundCheck.normal.y, -groundCheck.normal.x);
             data.grounded = groundCheck.collider != null;
 
             //If we hit ground, need to project along it
             if(data.grounded)
             {
-                data.pos += groundCheck.fraction * timeResolution * data.vel + groundCheck.normal*physicsEpsilon;
+                data.pos += groundCheck.fraction * timeResolution * data.vel + groundCheck.normal*epsilon;
                 data.vel = Vector2Ext.Proj(data.vel, groundTangent);
                 context.MarkGrounded();
             }

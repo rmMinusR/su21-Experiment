@@ -83,7 +83,12 @@ namespace Pathfinding
         {
             bool markRepaint = false;
 
-            character = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
+            PlayerHost tmp = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
+            if(tmp != character)
+            {
+                tmp = character;
+                movement = character.GetComponent<BaseMovementAction>();
+            }
 
             EditorGUILayout.Space();
             if(foldout_surfaceScanner = EditorGUILayout.Foldout(foldout_surfaceScanner, "Surface scanning", true))
@@ -93,18 +98,19 @@ namespace Pathfinding
                 surfaceResolution   = EditorGUILayout.Slider("Surface resolution"      , surfaceResolution  , 0.05f, detectionResolution);
                 mergeDist           = EditorGUILayout.Slider("Surface connection dist.", mergeDist          , surfaceResolution, detectionResolution);
                 sweepBackpedal      = EditorGUILayout.Slider("Surface backpedal"       , sweepBackpedal     , 0.05f, 1f);
-                GUI.enabled = (character != null);
+                GUI.enabled = character != null;
                 if (GUILayout.Button("Scan walkable surfaces"))
                 {
                     worldRepr = new WorldRepresentation(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
                     markRepaint = true;
                 }
-                GUI.enabled = true;
-                if (worldRepr != null && GUILayout.Button("Clear walkable surfaces"))
+                GUI.enabled = worldRepr != null;
+                if (GUILayout.Button("Clear walkable surfaces"))
                 {
                     worldRepr = null;
                     markRepaint = true;
                 }
+                GUI.enabled = true;
                 --EditorGUI.indentLevel;
             }
 
@@ -119,16 +125,19 @@ namespace Pathfinding
             EditorGUILayout.Space();
             if (foldout_surfaceConnections = EditorGUILayout.Foldout(foldout_surfaceConnections, "Surface-to-surface connections", true))
             {
-                if (worldRepr != null && GUILayout.Button("Generate connections"))
+                GUI.enabled = worldRepr != null;
+                if (GUILayout.Button("Generate connections"))
                 {
                     surfaceConnections = worldRepr.GetConnections(this);
                     markRepaint = true;
                 }
-                if (surfaceConnections != null && GUILayout.Button("Clear connections"))
+                GUI.enabled = surfaceConnections != null;
+                if (GUILayout.Button("Clear connections"))
                 {
                     surfaceConnections = null;
                     markRepaint = true;
                 }
+                GUI.enabled = true;
             }
 
             if (markRepaint) SceneView.RepaintAll();

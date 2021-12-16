@@ -35,6 +35,7 @@ namespace Pathfinding
             //Render basic path
             Handles.color = Color.green;
             Handles.DrawAAPolyLine(3, details.ConvertAll(x => (Vector3)x.pos).ToArray());
+            //Handles.DrawAAPolyLine(3, from.point, to.point);
 
             /*
             //Render time labels

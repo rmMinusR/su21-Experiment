@@ -46,22 +46,26 @@ namespace Pathfinding
                     //Setup context
                     PlayerHost.Context context = pathfinder.character.context;
                     context.input = input;
+                    context.currentAction = pathfinder.movement;
+                    context.owner = pathfinder.character;
+                    context.time.delta = pathfinder.physicsSimulator.timeResolution;
 
                     //Run simulation forward
-                    List<PhysicsSimulator.Frame> path = new List<PhysicsSimulator.Frame> { new PhysicsSimulator.Frame { pos = startPoint, grounded = true, time = 0 } };
+                    List<PhysicsSimulator.Frame> path = new List<PhysicsSimulator.Frame> { new PhysicsSimulator.Frame { pos = startPoint + Vector2.up*pathfinder.physicsSimulator.epsilon, grounded = true, time = 0 } };
                     pathfinder.physicsSimulator.SimulateSegmentForward(
                         pathfinder.character,
-                        pathfinder.character.context,
+                        context,
                         ref path,
                         (prev, next) => !worldBounds.Contains(next.pos)
-                                        || (next.grounded && !prev.grounded),
+                                        || (next.grounded && !prev.grounded)
+                                        || next.time > 10,
                         x => input
                     );
                     Vector2 simulationEnd = path[path.Count-1].pos;
 
                     //Check if we hit a walkable surface
                     Surface toSurf = surfaces.Where(s => s.IsNear(simulationEnd)).NullsafeFirstC();
-                    if (toSurf != null)
+                    if (toSurf != null && toSurf != fromSurf)
                     {
                         toSurf.GetClosestPoint(simulationEnd, out Vector2 arcEndPoint, out int arcEndIndex);
                         connections.Add(new Connection(

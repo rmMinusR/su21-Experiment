@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Pathfinding
@@ -35,6 +36,8 @@ namespace Pathfinding
 
         #endregion
 
+        #region Data structures
+
         public enum LedgeType
         {
             Falling = -1,
@@ -59,6 +62,9 @@ namespace Pathfinding
             }
         }
 
+        #endregion
+
+        #region Settings
 
         public float physicsEpsilon;
         public float timeResolution;
@@ -66,6 +72,18 @@ namespace Pathfinding
         public float ledgeProbeDist;
         public float ledgeDeltaThreshold;
 
+        public void DrawEditorGUI()
+        {
+            timeResolution      = 1/EditorGUILayout.Slider("Time resolution (FPS)", Mathf.Clamp(1 / timeResolution, 60, 240), 60, 240);
+            maxSimulationTime   =  EditorGUILayout.Slider("Max time"              , maxSimulationTime  , 5, 45);
+            physicsEpsilon      =  EditorGUILayout.Slider("Epsilon"               , physicsEpsilon     , 0.0001f, 0.002f);
+            ledgeProbeDist      =  EditorGUILayout.Slider("Ledge probe distance"  , ledgeProbeDist     , 5, 50);
+            ledgeDeltaThreshold =  EditorGUILayout.Slider("Ledge cutoff threshold", ledgeDeltaThreshold, 1, 10);
+        }
+
+        #endregion
+
+        #region Simulation
 
         public void SimulateFrame(PlayerHost character, ref PlayerHost.Context context, ref Frame data)
         {
@@ -100,8 +118,7 @@ namespace Pathfinding
             do
             {
                 //Run ledge detection
-                RaycastHit2D ledgeDet0, ledgeDet1;
-                data.ledge = DetectLedge(context, data, colliderSize, out ledgeDet0, out ledgeDet1);
+                data.ledge = DetectLedge(context, data, colliderSize, out _, out _);
 
                 //Setup input
                 context.input = getInput(data);
@@ -117,7 +134,9 @@ namespace Pathfinding
             context.currentAction.DoCleanup(ref context, null, IAction.ExecMode.SimulatePath);
         }
 
-        private LedgeType DetectLedge(PlayerHost.Context context, Frame data, Vector2 colliderSize, out RaycastHit2D ledgeDet0, out RaycastHit2D ledgeDet1)
+        #endregion
+
+        public LedgeType DetectLedge(PlayerHost.Context context, Frame data, Vector2 colliderSize, out RaycastHit2D ledgeDet0, out RaycastHit2D ledgeDet1)
         {
             Vector2 posPlusVel = data.pos + data.vel * context.time.delta; //Next frame
             ledgeDet0 = Physics2D.Raycast(data.pos, Physics2D.gravity.normalized, ledgeProbeDist+colliderSize.y); //Where we're standing right now
@@ -130,5 +149,6 @@ namespace Pathfinding
             if(Mathf.Abs(dy) > ledgeDeltaThreshold) return (dy>0) ? LedgeType.Rising : LedgeType.Falling;
             else return LedgeType.None;
         }
+
     }
 }

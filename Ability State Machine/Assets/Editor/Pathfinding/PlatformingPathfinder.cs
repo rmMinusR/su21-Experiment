@@ -23,7 +23,11 @@ namespace Pathfinding
             if(Selection.activeGameObject != null)
             {
                 PlayerHost m = Selection.activeGameObject.GetComponent<PlayerHost>();
-                if (character == null && m != null) character = m;
+                if (character == null && m != null)
+                {
+                    character = m;
+                    movement = character.GetComponent<BaseMovementAction>();
+                }
             }
         }
 
@@ -55,19 +59,23 @@ namespace Pathfinding
         #region Simulation settings
 
         public PlayerHost character { get; private set; }
+        public BaseMovementAction movement { get; private set; }
 
         private Vector2 startPosition = Vector2.left;
         private Vector2 endPosition   = Vector2.right;
 
-        private WorldRepresentation worldRepr;
-        public PhysicsSimulator physicsSimulator;
-
+        private bool foldout_surfaceScanner;
         private float detectionResolution;
         private float surfaceResolution;
         private float mergeDist;
         private float sweepBackpedal;
+        private WorldRepresentation worldRepr;
 
-        //private List<Connection> surfaceConnections;
+        private bool foldout_physicsSimulator;
+        public PhysicsSimulator physicsSimulator;
+
+        private bool foldout_surfaceConnections;
+        private List<Connection> surfaceConnections;
 
         #endregion
 
@@ -78,26 +86,50 @@ namespace Pathfinding
             character = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Surface scanning", EditorStyles.boldLabel);
-            detectionResolution = EditorGUILayout.Slider("Detection step"          , detectionResolution, 0.05f, 5f);
-            surfaceResolution   = EditorGUILayout.Slider("Surface resolution"      , surfaceResolution  , 0.05f, detectionResolution);
-            mergeDist           = EditorGUILayout.Slider("Surface connection dist.", mergeDist          , surfaceResolution, detectionResolution);
-            sweepBackpedal      = EditorGUILayout.Slider("Surface backpedal"       , sweepBackpedal     , 0.05f, 1f);
-            GUI.enabled = (character != null);
-            if (GUILayout.Button("Scan walkable surfaces"))
+            if(foldout_surfaceScanner = EditorGUILayout.Foldout(foldout_surfaceScanner, "Surface scanning", true))
             {
-                worldRepr = new WorldRepresentation(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
-                markRepaint = true;
-            }
-            GUI.enabled = true;
-            if (worldRepr != null && GUILayout.Button("Clear walkable surfaces"))
-            {
-                worldRepr = null;
-                markRepaint = true;
+                ++EditorGUI.indentLevel;
+                detectionResolution = EditorGUILayout.Slider("Detection step"          , detectionResolution, 0.05f, 5f);
+                surfaceResolution   = EditorGUILayout.Slider("Surface resolution"      , surfaceResolution  , 0.05f, detectionResolution);
+                mergeDist           = EditorGUILayout.Slider("Surface connection dist.", mergeDist          , surfaceResolution, detectionResolution);
+                sweepBackpedal      = EditorGUILayout.Slider("Surface backpedal"       , sweepBackpedal     , 0.05f, 1f);
+                GUI.enabled = (character != null);
+                if (GUILayout.Button("Scan walkable surfaces"))
+                {
+                    worldRepr = new WorldRepresentation(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
+                    markRepaint = true;
+                }
+                GUI.enabled = true;
+                if (worldRepr != null && GUILayout.Button("Clear walkable surfaces"))
+                {
+                    worldRepr = null;
+                    markRepaint = true;
+                }
+                --EditorGUI.indentLevel;
             }
 
             EditorGUILayout.Space();
-            //if(EditorGUILayout.DropdownButton(new GUIContent("Physics Simulation Parameters"), FocusType.Passive)) physicsSimulator.DrawEditorGUI();
+            if (foldout_physicsSimulator = EditorGUILayout.Foldout(foldout_physicsSimulator, "Physics simulation", true))
+            {
+                ++EditorGUI.indentLevel;
+                physicsSimulator.DrawEditorGUI();
+                --EditorGUI.indentLevel;
+            }
+
+            EditorGUILayout.Space();
+            if (foldout_surfaceConnections = EditorGUILayout.Foldout(foldout_surfaceConnections, "Surface-to-surface connections", true))
+            {
+                if (worldRepr != null && GUILayout.Button("Generate connections"))
+                {
+                    surfaceConnections = worldRepr.GetConnections(this);
+                    markRepaint = true;
+                }
+                if (surfaceConnections != null && GUILayout.Button("Clear connections"))
+                {
+                    surfaceConnections = null;
+                    markRepaint = true;
+                }
+            }
 
             if (markRepaint) SceneView.RepaintAll();
         }
@@ -131,6 +163,12 @@ namespace Pathfinding
 
 
             if(worldRepr != null) worldRepr.DebugDraw(character != null ? character.maxGroundAngle : 180);
+            
+
+            if(surfaceConnections != null)
+            {
+                foreach(Connection c in surfaceConnections) c.DebugDraw();
+            }
         }
 
         

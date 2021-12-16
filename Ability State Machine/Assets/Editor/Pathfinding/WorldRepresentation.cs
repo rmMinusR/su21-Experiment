@@ -67,7 +67,8 @@ namespace Pathfinding
                         connections.Add(new Connection(
                             new Connection.Node { surface = fromSurf, index = startIndex , point = startPoint },
                             new Connection.Node { surface = toSurf,   index = arcEndIndex, point = arcEndPoint},
-                            input
+                            input,
+                            path
                         ));
                     }
                 }
@@ -83,8 +84,8 @@ namespace Pathfinding
                         GeneralExt.Swap(ref leftEdge, ref rightEdge);
                         GeneralExt.Swap(ref leftInd, ref rightInd);
                     }
-                    TryAirborneArc(new InputParam { global = Vector2.left , local = Vector2.left , jump = true }, leftEdge , leftInd , Vector2.left *pathfinder.character.baseMovement.moveSpeed);
-                    TryAirborneArc(new InputParam { global = Vector2.right, local = Vector2.right, jump = true }, rightEdge, rightInd, Vector2.right*pathfinder.character.baseMovement.moveSpeed);
+                    TryAirborneArc(new InputParam { global = Vector2.left , local = Vector2.left , jump = true }, leftEdge , leftInd , Vector2.left *pathfinder.movement.moveSpeed);
+                    TryAirborneArc(new InputParam { global = Vector2.right, local = Vector2.right, jump = true }, rightEdge, rightInd, Vector2.right*pathfinder.movement.moveSpeed);
                 }
 
                 //Jump arcs: Scan all points on surface and project forward (slow!)
@@ -92,8 +93,8 @@ namespace Pathfinding
                 {
                     Vector2 arcStartPoint = fromSurf.GetPoints()[arcStartIndex];
 
-                    TryAirborneArc(new InputParam { global = Vector2.left , local = Vector2.left , jump = true }, arcStartPoint, arcStartIndex, Vector2.left *pathfinder.character.baseMovement.moveSpeed);
-                    TryAirborneArc(new InputParam { global = Vector2.right, local = Vector2.right, jump = true }, arcStartPoint, arcStartIndex, Vector2.right*pathfinder.character.baseMovement.moveSpeed);
+                    TryAirborneArc(new InputParam { global = Vector2.left , local = Vector2.left , jump = true }, arcStartPoint, arcStartIndex, Vector2.left *pathfinder.movement.moveSpeed);
+                    TryAirborneArc(new InputParam { global = Vector2.right, local = Vector2.right, jump = true }, arcStartPoint, arcStartIndex, Vector2.right*pathfinder.movement.moveSpeed);
                 }
             }
             return connections;

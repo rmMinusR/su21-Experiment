@@ -22,6 +22,8 @@ namespace Pathfinding
         public InputParam input;
         public List<PhysicsSimulator.Frame> details;
 
+        public float TimeCost => details!=null ? details[details.Count-1].time : float.PositiveInfinity;
+
         public Connection(Node from, Node to, InputParam input, List<PhysicsSimulator.Frame> details)
         {
             this.from = from;

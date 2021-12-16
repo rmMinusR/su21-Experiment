@@ -6,12 +6,12 @@ using UnityEngine;
 
 namespace Pathfinding
 {
-    public sealed class Pathfinder : EditorWindow
+    public sealed class Frontend : EditorWindow
     {
         #region Support code
 
-        [MenuItem("Tools/Platforming Pathfinder")]
-        public static void Open() => EditorWindow.GetWindow(typeof(Pathfinder));
+        [MenuItem("Tools/Platform Pathfinder")]
+        public static void Open() => EditorWindow.GetWindow(typeof(Frontend));
 
         #endregion
 
@@ -64,18 +64,20 @@ namespace Pathfinding
         private Vector2 startPosition = Vector2.left;
         private Vector2 endPosition   = Vector2.right;
 
-        private bool foldout_surfaceScanner;
+        private bool debug_surfaceScanner = true;
+        private bool foldout_surfaceScanner = true;
         private float detectionResolution;
         private float surfaceResolution;
         private float mergeDist;
         private float sweepBackpedal;
         private WorldRepresentation worldRepr;
 
-        private bool foldout_physicsSimulator;
+        private bool foldout_physicsSimulator = true;
         public PhysicsSimulator physicsSimulator;
 
-        private bool foldout_surfaceConnections;
-        private List<Connection> surfaceConnections;
+        private bool debug_surfaceConnections = true;
+        private bool foldout_surfaceConnections = true;
+        [SerializeField] private List<Connection> surfaceConnections;
 
         #endregion
 
@@ -102,12 +104,14 @@ namespace Pathfinding
                 if (GUILayout.Button("Scan walkable surfaces"))
                 {
                     worldRepr = new WorldRepresentation(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
+                    surfaceConnections = null;
                     markRepaint = true;
                 }
                 GUI.enabled = worldRepr != null;
                 if (GUILayout.Button("Clear walkable surfaces"))
                 {
                     worldRepr = null;
+                    surfaceConnections = null;
                     markRepaint = true;
                 }
                 GUI.enabled = true;
@@ -140,44 +144,64 @@ namespace Pathfinding
                 GUI.enabled = true;
             }
 
+            EditorGUILayout.Space();
+            if(debug_surfaceScanner != GUILayout.Toggle(debug_surfaceScanner, "Show walkable surfaces"))
+            {
+                debug_surfaceScanner = !debug_surfaceScanner;
+                markRepaint = true;
+            }
+            if(debug_surfaceConnections != GUILayout.Toggle(debug_surfaceConnections, "Show surface connections"))
+            {
+                debug_surfaceConnections = !debug_surfaceConnections;
+                markRepaint = true;
+            }
+
+            EditorGUILayout.Space();
+            GUI.enabled = surfaceConnections != null;
+            if(GUILayout.Button("Pathfind!"))
+            {
+                //TODO pathfinder.;
+            }
+            GUI.enabled = true;
+
             if (markRepaint) SceneView.RepaintAll();
         }
 
         private void OnSceneGUI(SceneView sceneView)
         {
-            //Draw handles and gizmos
-            EditorGUI.BeginChangeCheck();
+            if (surfaceConnections != null)
+            {
+                //Draw handles and gizmos
+                EditorGUI.BeginChangeCheck();
         
-            //Draw arrow
-            startPosition = Handles.PositionHandle(startPosition, Quaternion.identity);
-            endPosition   = Handles.PositionHandle(endPosition, Quaternion.identity);
-            if (character == null)
-            {
-                Handles.color = Color.green;
-                EditorExt.DrawArrow(startPosition, endPosition, Vector3.forward, (p1, p2) => Handles.DrawAAPolyLine(p1, p2));
+                //Draw arrow
+                startPosition = Handles.PositionHandle(startPosition, Quaternion.identity);
+                endPosition   = Handles.PositionHandle(endPosition, Quaternion.identity);
+                if (character == null)
+                {
+                    Handles.color = Color.green;
+                    EditorExt.DrawArrow(startPosition, endPosition, Vector3.forward, (p1, p2) => Handles.DrawAAPolyLine(p1, p2));
+                }
+
+                //Draw raycast down from start and end pos
+                Handles.color = Color.red;
+                {
+                    RaycastHit2D rc = Physics2D.Raycast(startPosition, Vector2.down, 100f);
+                    if (rc.collider != null) Handles.DrawDottedLine(startPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
+                }
+                {
+                    RaycastHit2D rc = Physics2D.Raycast(endPosition, Vector2.down, 100f);
+                    Handles.DrawDottedLine(endPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
+                }
+
+                EditorGUI.EndChangeCheck();
             }
 
-            //Draw raycast down from start and end pos
-            Handles.color = Color.red;
-            {
-                RaycastHit2D rc = Physics2D.Raycast(startPosition, Vector2.down, 100f);
-                if (rc.collider != null) Handles.DrawDottedLine(startPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
-            }
-            {
-                RaycastHit2D rc = Physics2D.Raycast(endPosition, Vector2.down, 100f);
-                Handles.DrawDottedLine(endPosition, rc.collider != null ? rc.point : (endPosition + Vector2.down * 100f), 1);
-            }
 
-            EditorGUI.EndChangeCheck();
-
-
-            if(worldRepr != null) worldRepr.DebugDraw(character != null ? character.maxGroundAngle : 180);
+            if(worldRepr != null && debug_surfaceScanner) worldRepr.DebugDraw(character != null ? character.maxGroundAngle : 180);
             
 
-            if(surfaceConnections != null)
-            {
-                foreach(Connection c in surfaceConnections) c.DebugDraw();
-            }
+            if(surfaceConnections != null && debug_surfaceConnections) foreach(Connection c in surfaceConnections) c.DebugDraw();
         }
 
         

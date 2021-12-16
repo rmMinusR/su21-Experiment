@@ -36,7 +36,7 @@ namespace Pathfinding
             }
         }
 
-        public List<Connection> GetConnections(Pathfinder pathfinder)
+        public List<Connection> GetConnections(Frontend pathfinder)
         {
             List<Connection> connections = new List<Connection>();
             foreach(Surface fromSurf in surfaces)

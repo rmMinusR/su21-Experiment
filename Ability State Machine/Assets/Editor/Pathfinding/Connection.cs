@@ -8,13 +8,13 @@ namespace Pathfinding
     {
         public struct Node
         {
-            public Surface surface;
+            [SerializeReference] public Surface surface;
             public int index;
             public Vector2 point; //For faster/easier lookup later
         }
 
-        [SerializeReference] public Node from;
-        [SerializeReference] public Node to;
+        public Node from;
+        public Node to;
 
         //What brings us here?
         public InputParam input;

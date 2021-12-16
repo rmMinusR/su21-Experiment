@@ -48,13 +48,14 @@ namespace Pathfinding
                     context.input = input;
 
                     //Run simulation forward
-                    List<Pathfinder.Frame> path = new List<Pathfinder.Frame> { new Pathfinder.Frame { pos = startPoint, grounded = true, time = 0 } };
-                    pathfinder.SimulateSegmentForward(
+                    List<PhysicsSimulator.Frame> path = new List<PhysicsSimulator.Frame> { new PhysicsSimulator.Frame { pos = startPoint, grounded = true, time = 0 } };
+                    pathfinder.physicsSimulator.SimulateSegmentForward(
+                        pathfinder.character,
                         pathfinder.character.context,
                         ref path,
                         (prev, next) => !worldBounds.Contains(next.pos)
                                         || (next.grounded && !prev.grounded),
-                        x => input.jump
+                        x => input
                     );
                     Vector2 simulationEnd = path[path.Count-1].pos;
 
@@ -100,8 +101,7 @@ namespace Pathfinding
 
         public void DebugDraw(float maxAngle)
         {
-            foreach (Surface s in surfaces)
-                s.DebugDraw(maxAngle);
+            foreach (Surface s in surfaces) s.DebugDraw(maxAngle);
         }
     }
 }

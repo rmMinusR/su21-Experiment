@@ -70,6 +70,12 @@ namespace Pathfinding
             SceneView.duringSceneGui += this.OnSceneGUI;
 
             TryCaptureMovementController();
+
+            //Set recommended values
+            detectionResolution = 2;
+            surfaceResolution = 0.3f;
+            mergeDist = 0.5f;
+            sweepBackpedal = 0.5f;
         }
 
         private void OnDestroy()
@@ -86,26 +92,12 @@ namespace Pathfinding
         private Vector2 startPosition = Vector2.left;
         private Vector2 endPosition   = Vector2.right;
 
-        private SurfaceSweeper surfaceSweeper;
+        private WorldRepresentation worldRepr;
 
-        private float maxSimulationTime = 10f;
-        private float maxBranchTime = 10f;
-
-        private float snapInputThreshold = 0.05f;
-
-        private float jumpLedgeProbing = 5f;
-        private float ledgeThreshold = 1f;
-        private bool jumpIfLedge = true;
-        private bool jumpIfTooSteep = false;
-
-        private float timeResolution = 0.01f;
-        private float timeLabelResolution = 0.5f;
-        private float physicsEpsilon = 0.00095f;
-        private int nMicroframes = 1;
-
-        private bool showDebugData = false;
-
-        private InputTargettingMode inputTargettingMode = InputTargettingMode.EightWay;
+        private float detectionResolution;
+        private float surfaceResolution;
+        private float mergeDist;
+        private float sweepBackpedal;
 
         #endregion
 
@@ -116,76 +108,23 @@ namespace Pathfinding
             character = (PlayerHost) EditorGUILayout.ObjectField("Agent", character, typeof(PlayerHost), true);
 
             EditorGUILayout.Space();
-            if(GUILayout.Button("Scan surfaces"))
+            EditorGUILayout.LabelField("Surface scanning", EditorStyles.boldLabel);
+            detectionResolution = EditorGUILayout.Slider("Detection step"          , detectionResolution, 0.05f, 5f);
+            surfaceResolution   = EditorGUILayout.Slider("Surface resolution"      , surfaceResolution  , 0.05f, detectionResolution);
+            mergeDist           = EditorGUILayout.Slider("Surface connection dist.", mergeDist          , surfaceResolution, detectionResolution);
+            sweepBackpedal      = EditorGUILayout.Slider("Surface backpedal"       , sweepBackpedal     , 0.05f, 1f);
+            GUI.enabled = (character != null);
+            if (GUILayout.Button("Scan walkable surfaces"))
             {
-                surfaceSweeper = new SurfaceSweeper();
-                surfaceSweeper.ScanFrom(startPosition);
+                worldRepr = new WorldRepresentation();
+                worldRepr.ScanAll(detectionResolution, mergeDist, surfaceResolution, sweepBackpedal, character.maxGroundAngle, x => x == character.gameObject);
                 markRepaint = true;
             }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Input settings", EditorStyles.boldLabel);
+            GUI.enabled = true;
+            if (worldRepr != null && GUILayout.Button("Clear walkable surfaces"))
             {
-                InputTargettingMode tmp = (InputTargettingMode) EditorGUILayout.EnumPopup("Input targetting mode", inputTargettingMode);
-                if (inputTargettingMode != tmp) { inputTargettingMode = tmp; markRepaint = true; }
-            }
-            if (inputTargettingMode != InputTargettingMode.Direct) {
-                float tmp = EditorGUILayout.Slider("Snap threshold", snapInputThreshold, 0.01f, 1);
-                if (snapInputThreshold != tmp) { snapInputThreshold = tmp; markRepaint = true; }
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Jump conditions", EditorStyles.boldLabel);
-            {
-                bool tmp = EditorGUILayout.Toggle("Slope too steep", jumpIfTooSteep);
-                if (jumpIfTooSteep != tmp) { jumpIfTooSteep = tmp; markRepaint = true; }
-            }
-            {
-                bool tmp = EditorGUILayout.Toggle("Approaching ledge", jumpIfLedge);
-                if (jumpIfLedge != tmp) { jumpIfLedge = tmp; markRepaint = true; }
-            }
-            if(jumpIfLedge) {
-                float tmp = EditorGUILayout.Slider("Ledge probe (m)", jumpLedgeProbing, 5, 50);
-                if (jumpLedgeProbing != tmp) { jumpLedgeProbing = tmp; markRepaint = true; }
-                tmp = EditorGUILayout.Slider("Ledge drop threshold (m)", ledgeThreshold, 1, 10);
-                if (ledgeThreshold != tmp) { ledgeThreshold = tmp; markRepaint = true; }
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Time", EditorStyles.boldLabel);
-            {
-                float tmp = 1/EditorGUILayout.Slider("Simulation resolution (FPS)", Mathf.Clamp(1/timeResolution, 60, 240), 60, 240);
-                if(timeResolution != tmp) { timeResolution = tmp; markRepaint = true; }
-            }
-            {
-                float tmp = EditorGUILayout.Slider("Label interval (s)", timeLabelResolution, 0.1f, 1f);
-                if(timeLabelResolution != tmp) { timeLabelResolution = tmp; markRepaint = true; }
-            }
-            {
-                float tmp = EditorGUILayout.Slider("Max. time simulated (s)", maxSimulationTime, 5f, 45f);
-                if (maxSimulationTime != tmp) { maxSimulationTime = tmp; markRepaint = true; }
-            }
-            {
-                float tmp = EditorGUILayout.Slider("Max. time in branch (s)", maxBranchTime, 5f, maxSimulationTime);
-                if (maxBranchTime != tmp) { maxBranchTime = tmp; markRepaint = true; }
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Physics", EditorStyles.boldLabel);
-            {
-                float tmp = EditorGUILayout.Slider("Raycast backpedal", physicsEpsilon, 0.0001f, 0.002f);
-                if(physicsEpsilon != tmp) { physicsEpsilon = tmp; markRepaint = true; }
-            }
-            {
-                int tmp = EditorGUILayout.IntSlider("Tangents processed/frame", nMicroframes, 1, 12);
-                if(nMicroframes != tmp) { nMicroframes = tmp; markRepaint = true; }
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Misc.", EditorStyles.boldLabel);
-            {
-                bool tmp = EditorGUILayout.Toggle("Show debug info", showDebugData);
-                if(showDebugData != tmp) { showDebugData = tmp; markRepaint = true; }
+                worldRepr = null;
+                markRepaint = true;
             }
 
             if (markRepaint) SceneView.RepaintAll();
@@ -219,7 +158,7 @@ namespace Pathfinding
             EditorGUI.EndChangeCheck();
 
 
-            if(surfaceSweeper != null) surfaceSweeper.DebugDraw();
+            if(worldRepr != null) worldRepr.DebugDraw();
         }
     }
 }

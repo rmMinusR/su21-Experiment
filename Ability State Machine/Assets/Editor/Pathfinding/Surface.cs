@@ -63,7 +63,7 @@ namespace Pathfinding
             this.distBetweenPoints = epsilon;
         }
 
-        public static Surface BuildFromSweep(Vector2 startPoint, float mergeEpsilon, float stepEpsilon, float backpedalEpsilon, float maxSurfaceAngle)
+        public static Surface BuildFromSweep(Vector2 startPoint, float mergeEpsilon, float stepEpsilon, float backpedalEpsilon, float maxSurfaceAngle, Func<GameObject, bool> ignore)
         {
             RaycastHit2D initialScan = Physics2D.Raycast(startPoint, Vector2.down);
             Surface surf = new Surface(initialScan.point, mergeEpsilon);
@@ -75,7 +75,8 @@ namespace Pathfinding
             {
                 Vector2 tangentLeft = new Vector2(-scan.normal.y, scan.normal.x);
                 scan.point += tangentLeft * stepEpsilon + scan.normal * backpedalEpsilon;
-                scan = Physics2D.Raycast(scan.point, -scan.normal);
+                scan.distance = float.PositiveInfinity;
+                foreach (RaycastHit2D h in Physics2D.RaycastAll(scan.point, -scan.normal)) if (h.distance < scan.distance && !ignore(h.collider.gameObject)) scan = h;
 
                 @continue &= scan.distance > 0.01f && Vector2.Angle(Vector2.up, scan.normal) < maxSurfaceAngle && surf.IsNear(scan.point);
                 if(@continue) surf.points.Insert(0, scan.point);
@@ -88,7 +89,8 @@ namespace Pathfinding
             {
                 Vector2 tangentRight = new Vector2(scan.normal.y, -scan.normal.x);
                 scan.point += tangentRight * stepEpsilon + scan.normal * backpedalEpsilon;
-                scan = Physics2D.Raycast(scan.point, -scan.normal);
+                scan.distance = float.PositiveInfinity;
+                foreach(RaycastHit2D h in Physics2D.RaycastAll(scan.point, -scan.normal)) if(h.distance < scan.distance && !ignore(h.collider.gameObject)) scan = h;
 
                 @continue &= scan.distance > 0.01f && Vector2.Angle(Vector2.up, scan.normal) < maxSurfaceAngle && surf.IsNear(scan.point);
                 if(@continue) surf.points.Add(scan.point);
@@ -99,10 +101,14 @@ namespace Pathfinding
 
         public void DebugDraw()
         {
-            Handles.color = Color.red;
             for(int i = 1; i < points.Count; ++i)
             {
-                Handles.DrawAAPolyLine(10.0f, points[i-1], points[i]);
+                Vector2 a = points[i - 1], b = points[i];
+                Vector2 diff = a-b;
+                float ang = Vector2.Angle(Vector2.right, diff.x<0 ? -diff : diff);
+
+                Handles.color = Color.HSVToRGB(0.33f-ang/180, 1, 1);
+                Handles.DrawAAPolyLine(10.0f, a, b);
             }
         }
     }

@@ -85,10 +85,8 @@ namespace Pathfinding
 
         #region Simulation
 
-        public void SimulateFrame(PlayerHost character, ref PlayerHost.Context context, ref Frame data)
+        public void SimulateFrame(PlayerHost character, ref PlayerHost.Context context, ref Frame data, CastFunc cast)
         {
-            CastFunc cast = GetCastFunc(character.gameObject);
-
             //Tick time and simulate integration
             data.time = context.time.active = context.time.stable += context.time.delta;
             data.vel = character.DoPhysics(data.vel, ref context, IAction.ExecMode.SimulatePath);
@@ -99,7 +97,8 @@ namespace Pathfinding
             data.grounded = groundCheck.collider != null;
 
             //If we hit ground, need to project along it
-            if(data.grounded)
+            if(!data.grounded) data.pos += data.vel * context.time.delta;
+            else 
             {
                 data.pos += groundCheck.fraction * timeResolution * data.vel + groundCheck.normal*epsilon;
                 data.vel = Vector2Ext.Proj(data.vel, groundTangent);
@@ -107,7 +106,7 @@ namespace Pathfinding
             }
         }
 
-        public void SimulateSegmentForward(PlayerHost character, PlayerHost.Context context, ref List<Frame> path, Func<Frame, Frame, bool> shouldStop, Func<Frame, InputParam> getInput)
+        public void SimulateSegmentForward(PlayerHost character, PlayerHost.Context context, ref List<Frame> path, Func<Frame, Frame, bool> shouldStop, Func<Frame, InputParam> getInput, CastFunc cast)
         {
             Frame data = path[path.Count-1];
 
@@ -123,7 +122,7 @@ namespace Pathfinding
                 //Setup input
                 context.input = getInput(data);
 
-                SimulateFrame(character, ref context, ref data);
+                SimulateFrame(character, ref context, ref data, cast);
             
                 //Mark frame
                 path.Add(data);

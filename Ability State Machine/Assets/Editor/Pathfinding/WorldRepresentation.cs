@@ -49,17 +49,20 @@ namespace Pathfinding
                     context.currentAction = pathfinder.movement;
                     context.owner = pathfinder.character;
                     context.time.delta = pathfinder.physicsSimulator.timeResolution;
+                    context.MarkGrounded();
 
                     //Run simulation forward
-                    List<PhysicsSimulator.Frame> path = new List<PhysicsSimulator.Frame> { new PhysicsSimulator.Frame { pos = startPoint + Vector2.up*pathfinder.physicsSimulator.epsilon, grounded = true, time = 0 } };
+                    List<PhysicsSimulator.Frame> path = new List<PhysicsSimulator.Frame> { new PhysicsSimulator.Frame { pos = startPoint + Vector2.up*pathfinder.physicsSimulator.epsilon, vel = startVel, grounded = true, time = 0 } };
                     pathfinder.physicsSimulator.SimulateSegmentForward(
                         pathfinder.character,
                         context,
                         ref path,
-                        (prev, next) => !worldBounds.Contains(next.pos)
+                        (prev, next) => worldBounds.min.x > next.pos.x || worldBounds.min.y > next.pos.y || worldBounds.max.x < next.pos.x
                                         || (next.grounded && !prev.grounded)
                                         || next.time > 10,
-                        x => input
+                        x => input,
+                        (pos, dir) => Physics2D.Raycast(pos, dir.normalized, dir.magnitude)
+                        //PhysicsSimulator.GetCastFunc(pathfinder.character.gameObject)
                     );
                     Vector2 simulationEnd = path[path.Count-1].pos;
 
@@ -68,6 +71,7 @@ namespace Pathfinding
                     if (toSurf != null && toSurf != fromSurf)
                     {
                         toSurf.GetClosestPoint(simulationEnd, out Vector2 arcEndPoint, out int arcEndIndex);
+
                         connections.Add(new Connection(
                             new Connection.Node { surface = fromSurf, index = startIndex , point = startPoint },
                             new Connection.Node { surface = toSurf,   index = arcEndIndex, point = arcEndPoint},
